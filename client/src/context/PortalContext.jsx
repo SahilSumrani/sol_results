@@ -1,44 +1,37 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { INITIAL_USERS, INITIAL_COURSES, INITIAL_SUBJECTS, INITIAL_STUDENTS_LIST, INITIAL_MARKS, INITIAL_AUDIT_LOGS } from '../data/mockData';
-
 const PortalContext = createContext();
 
 export const PortalProvider = ({ children }) => {
-  // Persistence state setup
+  // Persistence & MySQL API State setup
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('portal_user');
     return saved ? JSON.parse(saved) : null;
   });
 
-  const [users, setUsers] = useState(() => {
-    const saved = localStorage.getItem('portal_users_list');
-    return saved ? JSON.parse(saved) : INITIAL_USERS;
-  });
+  const [users, setUsers] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [marks, setMarks] = useState([]);
+  const [logs, setLogs] = useState([]);
 
-  const [courses, setCourses] = useState(() => {
-    const saved = localStorage.getItem('portal_courses');
-    return saved ? JSON.parse(saved) : INITIAL_COURSES;
-  });
-
-  const [subjects, setSubjects] = useState(() => {
-    const saved = localStorage.getItem('portal_subjects');
-    return saved ? JSON.parse(saved) : INITIAL_SUBJECTS;
-  });
-
-  const [students, setStudents] = useState(() => {
-    const saved = localStorage.getItem('portal_students');
-    return saved ? JSON.parse(saved) : INITIAL_STUDENTS_LIST;
-  });
-
-  const [marks, setMarks] = useState(() => {
-    const saved = localStorage.getItem('portal_marks');
-    return saved ? JSON.parse(saved) : INITIAL_MARKS;
-  });
-
-  const [logs, setLogs] = useState(() => {
-    const saved = localStorage.getItem('portal_logs');
-    return saved ? JSON.parse(saved) : INITIAL_AUDIT_LOGS;
-  });
+  // Fetch real MySQL Database Records on Mount
+  useEffect(() => {
+    const fetchPortalData = async () => {
+      try {
+        const API_BASE = import.meta.env.PROD ? 'https://sol-results.onrender.com' : '';
+        const res = await fetch(`${API_BASE}/api/teacher/submissions`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.submissions) setLogs(data.submissions);
+          if (data.assignedSubjects) setSubjects(data.assignedSubjects);
+          if (data.students) setStudents(data.students);
+        }
+      } catch (err) {
+        console.log('PortalContext DB fetch:', err.message);
+      }
+    };
+    fetchPortalData();
+  }, []);
 
   // Sync to local storage
   useEffect(() => {
