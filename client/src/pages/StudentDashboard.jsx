@@ -152,7 +152,7 @@ export const StudentDashboard = () => {
                         University of Delhi
                       </h2>
                       <p className="text-sm font-bold mt-0.5" style={{ color: '#800000', fontSize: '14px' }}>
-                        Semester Examination Nov-Dec 2025
+                        Semester Examination {session}
                       </p>
                     </td>
                     <td className="w-[25%] text-right align-top">
