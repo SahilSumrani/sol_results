@@ -9,8 +9,8 @@ export const StudentDashboard = () => {
   const { currentUser, marks } = usePortal();
   const marksheetRef = useRef(null);
 
-  // View state: true = showing Gradecard Marksheet, false = showing DU Result Search Form (when Closed)
-  const [showMarksheet, setShowMarksheet] = useState(true);
+  // View state: default to false (DU Result Search Form), true when search submitted
+  const [showMarksheet, setShowMarksheet] = useState(false);
 
   // Form State
   const [college, setCollege] = useState('School of Open Learning');
