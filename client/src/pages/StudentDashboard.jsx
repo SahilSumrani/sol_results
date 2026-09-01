@@ -41,7 +41,8 @@ export const StudentDashboard = () => {
     
     // Fetch live student marks from MySQL Database API
     try {
-      const res = await fetch(`/api/marks/student/${rollNo || '23345227188'}`);
+      const API_BASE = import.meta.env.PROD ? 'https://sol-results.onrender.com' : '';
+      const res = await fetch(`${API_BASE}/api/marks/student/${rollNo || '23345227188'}`);
       if (res.ok) {
         const data = await res.json();
         if (data && data.length > 0) setDbMarks(data);

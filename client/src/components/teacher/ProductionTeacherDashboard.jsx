@@ -90,7 +90,8 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
     const fetchTeacherData = async () => {
       setLoading(true);
       try {
-        const res = await fetch('/api/teacher/submissions');
+        const API_BASE = import.meta.env.PROD ? 'https://sol-results.onrender.com' : '';
+        const res = await fetch(`${API_BASE}/api/teacher/submissions`);
         if (res.ok) {
           const data = await res.json();
           if (data.submissions && data.submissions.length > 0) setSubmissionsList(data.submissions);
