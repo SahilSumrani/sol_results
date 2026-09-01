@@ -55,44 +55,23 @@ export const StudentDashboard = () => {
     confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
   };
 
-  const studentRollNo = rollNo || '23345227188';
+  const studentRollNo = rollNo || '';
 
-  const duFullPaperList = [
-    { sr: 1, code: '2035001003', name: 'ENGLISH FLUENCY-I', type: 'GE', sem: 'I', credit: 4, th: 'B', tu: 'O', pr: '', net: 'B+', point: 7, creditPoint: 28 },
-    { sr: 2, code: '2036000002', name: 'COMMUNICATION IN EVERYDAY LIFE', type: 'SEC', sem: 'I', credit: 2, th: '', tu: '', pr: 'C', net: 'C', point: 5, creditPoint: 10 },
-    { sr: 3, code: '2181001001', name: 'ENVIRONMENTAL SCIENCE: THEORY INTO PRACTICE – I', type: 'AECC', sem: 'I', credit: 2, th: 'B+', tu: '', pr: 'C', net: 'B', point: 6, creditPoint: 12 },
-    { sr: 4, code: '2342201102', name: 'PROGRAMMING FUNDAMENTALS USING PYTHON', type: 'DSC', sem: 'I', credit: 4, th: 'B+', tu: '', pr: 'O', net: 'B+', point: 7, creditPoint: 28 },
-    { sr: 5, code: '2342571101', name: 'PROGRAMMING FUNDAMENTALS USING C++', type: 'DSC', sem: 'I', credit: 4, th: 'B', tu: '', pr: 'O', net: 'B', point: 6, creditPoint: 24 },
-    { sr: 6, code: '2432201101', name: 'BASIC CONCEPTS AND IDEAS IN EDUCATION', type: 'DSC', sem: 'I', credit: 4, th: 'B', tu: 'A', pr: '', net: 'B+', point: 7, creditPoint: 28 },
-    { sr: 7, code: '6967000002', name: 'CONSTITUTIONAL VALUES AND FUNDAMENTAL DUTIES', type: 'VAC', sem: 'I', credit: 2, th: 'A', tu: '', pr: 'A', net: 'A', point: 8, creditPoint: 16 },
-    { sr: 8, code: '2051001001', name: 'हिन्दी भाषा: सम्प्रेषण और संचार - क', type: 'AEC', sem: 'II', credit: 2, th: 'B', tu: '', pr: '', net: 'B', point: 6, creditPoint: 12 },
-    { sr: 9, code: '2055201001', name: 'हिंदी भाषा और साहित्य - क', type: 'GE', sem: 'II', credit: 4, th: 'B+', tu: 'A', pr: '', net: 'B+', point: 7, creditPoint: 28 },
-    { sr: 10, code: '2056000002', name: 'रंगमंच', type: 'SEC', sem: 'II', credit: 2, th: '', tu: '', pr: 'A', net: 'A', point: 8, creditPoint: 16 },
-    { sr: 11, code: '2342201202', name: 'DATA INTERPRETATION AND VISUALIZATION USING PYTHON', type: 'DSC', sem: 'II', credit: 4, th: 'B+', tu: '', pr: 'A+', net: 'B+', point: 7, creditPoint: 28 },
-    { sr: 12, code: '2342571201', name: 'DATA STRUCTURES', type: 'DSC', sem: 'II', credit: 4, th: 'B+', tu: '', pr: 'A+', net: 'B+', point: 7, creditPoint: 28 },
-    { sr: 13, code: '2432201201', name: 'UNDERSTANDING HUMAN DEVELOPMENT', type: 'DSC', sem: 'II', credit: 4, th: 'B', tu: 'A+', pr: '', net: 'B+', point: 7, creditPoint: 28 },
-    { sr: 14, code: '6967000022', name: 'भारतीय भक्ति परम्परा और मानव मूल्य', type: 'VAC', sem: 'II', credit: 2, th: 'B', tu: '', pr: 'C', net: 'B', point: 6, creditPoint: 12 },
-    { sr: 15, code: '2035002003', name: 'ENGLISH FLUENCY-II', type: 'GE', sem: 'III', credit: 4, th: 'B+', tu: 'O', pr: '', net: 'A', point: 8, creditPoint: 32 },
-    { sr: 16, code: '2036000003', name: 'COMMUNICATION IN PROFESSIONAL LIFE', type: 'SEC', sem: 'III', credit: 2, th: '', tu: '', pr: 'O', net: 'O', point: 10, creditPoint: 20 },
-    { sr: 17, code: '2181002001', name: 'ENVIRONMENTAL SCIENCE: THEORY INTO PRACTICE - II', type: 'AEC', sem: 'III', credit: 2, th: 'D', tu: '', pr: 'O', net: 'B+', point: 7, creditPoint: 14 },
-    { sr: 18, code: '2342572301', name: 'COMPUTER SYSTEM ARCHITECTURE', type: 'CORE', sem: 'III', credit: 4, th: 'B', tu: '', pr: 'B', net: 'B', point: 6, creditPoint: 24 },
-    { sr: 19, code: '2342202302', name: 'DATA MINING - I', type: 'DSC', sem: 'III', credit: 4, th: 'D', tu: '', pr: 'O', net: 'B', point: 6, creditPoint: 24 },
-    { sr: 20, code: '2432202301', name: 'EDUCATION IN PLURAL SOCIETY', type: 'DSC', sem: 'III', credit: 4, th: 'D', tu: 'B', pr: '', net: 'D', point: 4, creditPoint: 16 },
-    { sr: 21, code: '6967000014', name: 'READING INDIAN FICTION IN ENGLISH', type: 'VAC', sem: 'III', credit: 2, th: 'C', tu: '', pr: 'A+', net: 'B+', point: 7, creditPoint: 14 },
-    { sr: 22, code: '2051002001', name: 'व्यवहारिक हिंदी (हिन्दी क)', type: 'AEC', sem: 'IV', credit: 2, th: 'C', tu: '', pr: '', net: 'C', point: 5, creditPoint: 10 },
-    { sr: 23, code: '2055002001', name: 'हिंदी गद्य: उद्भव और विकास `क`', type: 'GE', sem: 'IV', credit: 4, th: 'B+', tu: 'B+', pr: '', net: 'B+', point: 7, creditPoint: 28 },
-    { sr: 24, code: '2342202402', name: 'DATA MINING-II', type: 'DSC', sem: 'IV', credit: 4, th: 'D', tu: '', pr: 'A', net: 'D', point: 4, creditPoint: 16 },
-    { sr: 25, code: '2342572401', name: 'OPERATING SYSTEMS', type: 'DSC', sem: 'IV', credit: 4, th: 'B+', tu: '', pr: 'A', net: 'B+', point: 7, creditPoint: 28 },
-    { sr: 26, code: '2346000005', name: 'BASIC IT TOOLS', type: 'SEC', sem: 'IV', credit: 2, th: '', tu: '', pr: 'O', net: 'O', point: 10, creditPoint: 20 },
-    { sr: 27, code: '2432202401', name: 'EDUCATION IN INDIA: POLICY AND PRACTICE', type: 'DSC', sem: 'IV', credit: 4, th: 'B+', tu: 'A+', pr: '', net: 'B+', point: 7, creditPoint: 28 },
-    { sr: 28, code: '6967000008', name: 'FINANCIAL LITERACY', type: 'VAC', sem: 'IV', credit: 2, th: 'B', tu: '', pr: 'O', net: 'A', point: 8, creditPoint: 16 },
-    { sr: 29, code: '2034002004', name: 'LITERATURE & HUMAN RIGHTS', type: 'GE', sem: 'V', credit: 4, th: 'B', tu: 'O', pr: '', net: 'B+', point: 7, creditPoint: 28 },
-    { sr: 30, code: '2036000002', name: 'COMMUNICATION IN EVERYDAY LIFE', type: 'SEC', sem: 'V', credit: 2, th: '', tu: '', pr: 'O', net: 'O', point: 10, creditPoint: 20 },
-    { sr: 31, code: '2342203502', name: 'MACHINE LEARNING', type: 'DSC', sem: 'V', credit: 4, th: 'C', tu: '', pr: 'O', net: 'B', point: 6, creditPoint: 24 },
-    { sr: 32, code: '2342573501', name: 'DATABASE MANAGEMENT SYSTEMS', type: 'DSC', sem: 'V', credit: 4, th: 'B', tu: '', pr: 'O', net: 'B+', point: 7, creditPoint: 28 },
-    { sr: 33, code: '2343012008', name: 'INTRODUCTION TO WEB PROGRAMMING', type: 'DSE', sem: 'V', credit: 4, th: 'B+', tu: '', pr: 'O', net: 'A', point: 8, creditPoint: 32 },
-    { sr: 34, code: '2432203501', name: 'EDUCATION: TEACHER AND TEACHER EDUCATION', type: 'DSC', sem: 'V', credit: 4, th: 'C', tu: 'O', pr: '', net: 'B', point: 6, creditPoint: 24 }
-  ];
+  // Dynamic Paper List constructed purely from Database Records
+  const paperList = dbMarks.map((m, idx) => ({
+    sr: idx + 1,
+    code: m.paperCode,
+    name: m.paperName,
+    type: m.paperType || 'DSC',
+    sem: m.sem,
+    credit: m.credit || 4,
+    th: m.thGrade || (m.thObt > 50 ? 'A' : 'B+'),
+    tu: m.tuGrade || (m.tuObt > 15 ? 'O' : 'A'),
+    pr: m.prGrade || (m.prObt > 25 ? 'O' : '-'),
+    net: m.netGrade || 'A',
+    point: m.gradePoint || 8,
+    creditPoint: m.creditPoint || 32
+  }));
 
   // Real-time automatic SGPA / CGPA Calculation Engine from Database Records
   const calculateSgpaTable = () => {
@@ -269,20 +248,7 @@ export const StudentDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {(dbMarks.length > 0 ? dbMarks.map((m, idx) => ({
-                      sr: idx + 1,
-                      code: m.paperCode || 'CS401',
-                      name: m.paperName || 'PROGRAMMING FUNDAMENTALS USING PYTHON',
-                      type: m.paperType || 'DSC',
-                      sem: m.sem || 'V',
-                      credit: m.credit || 4,
-                      th: m.thGrade || (m.thObt > 50 ? 'A' : 'B+'),
-                      tu: m.tuGrade || (m.tuObt > 15 ? 'O' : 'A'),
-                      pr: m.prGrade || (m.prObt > 25 ? 'O' : '-'),
-                      net: m.netGrade || 'A',
-                      point: m.gradePoint || 8,
-                      creditPoint: m.creditPoint || 32
-                    })) : duFullPaperList).map((p) => (
+                    {paperList.map((p) => (
                       <tr key={p.sr} className="hover:bg-slate-50">
                         <td className="border border-slate-300 p-1 text-center">{p.sr}</td>
                         <td className="border border-slate-300 p-1 text-center font-mono">{p.code}</td>
