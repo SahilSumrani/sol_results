@@ -180,11 +180,11 @@ export const StudentDashboard = () => {
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">Name</td>
-                    <td className="py-1">: <span style={{ color: '#800000' }}>SAHIL SUMRANI</span></td>
+                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.name || (dbMarks[0]?.studentName) || 'STUDENT CANDIDATE'}</span></td>
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">Father's Name</td>
-                    <td className="py-1">: <span style={{ color: '#800000' }}>Harish Sumrani</span></td>
+                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.fatherName || 'DU Enrolled Parent'}</span></td>
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">Mother's Name</td>
@@ -192,15 +192,15 @@ export const StudentDashboard = () => {
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">Enrollment No.</td>
-                    <td className="py-1">: <span style={{ color: '#800000' }}>23SOLNBAPR037644</span></td>
+                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.enrollmentNo || `23SOL${studentRollNo}`}</span></td>
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">Course Name</td>
-                    <td className="py-1">: <span style={{ color: '#800000' }}>(NEP) B.A. (PROGRAMME)</span></td>
+                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.course || (dbMarks[0]?.course) || '(NEP) B.A. (PROGRAMME)'}</span></td>
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">Semester</td>
-                    <td className="py-1">: <span style={{ color: '#800000' }}>V</span></td>
+                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.semester || (dbMarks[0]?.sem) || 'V'}</span></td>
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">College Name</td>
