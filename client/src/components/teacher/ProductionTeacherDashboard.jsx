@@ -45,17 +45,10 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
   };
 
   // Editable Student Marks Preview Data
-  const [previewRows, setPreviewRows] = useState([
-    { rollNo: '240101', name: 'Aman Kumar', internal: 24, practical: 18, total: 42, status: 'Valid' },
-    { rollNo: '240102', name: 'Rahul Sharma', internal: 26, practical: 19, total: 45, status: 'Valid' },
-    { rollNo: '240103', name: 'Priya Singh', internal: 22, practical: 17, total: 39, status: 'Valid' },
-    { rollNo: '240104', name: 'Mohit Kumar', internal: 27, practical: 20, total: 47, status: 'Valid' }
-  ]);
+  const [previewRows, setPreviewRows] = useState([]);
 
   // Audit Logs Store
-  const [auditLogs, setAuditLogs] = useState([
-    { id: 1, submissionId: 'SUB-2026-00105', rollNo: '240145', name: 'Rohan Verma', paperCode: 'CS401', field: 'Internal Marks', prevVal: '27', newVal: '31', user: 'Dr. Rahul Sharma', reason: 'Re-evaluation & answer script check', date: '02 Sep 2026 12:45 AM' }
-  ]);
+  const [auditLogs, setAuditLogs] = useState([]);
   
   // Dynamic REST API Integration & Fallback State Guards
   const [loading, setLoading] = useState(false);
