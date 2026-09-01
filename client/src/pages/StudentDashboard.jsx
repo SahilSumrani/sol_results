@@ -230,7 +230,20 @@ export const StudentDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {duFullPaperList.map((p) => (
+                    {(dbMarks.length > 0 ? dbMarks.map((m, idx) => ({
+                      sr: idx + 1,
+                      code: m.paperCode || 'CS401',
+                      name: m.paperName || 'PROGRAMMING FUNDAMENTALS USING PYTHON',
+                      type: m.paperType || 'DSC',
+                      sem: m.sem || 'V',
+                      credit: m.credit || 4,
+                      th: m.thGrade || (m.thObt > 50 ? 'A' : 'B+'),
+                      tu: m.tuGrade || (m.tuObt > 15 ? 'O' : 'A'),
+                      pr: m.prGrade || (m.prObt > 25 ? 'O' : '-'),
+                      net: m.netGrade || 'A',
+                      point: m.gradePoint || 8,
+                      creditPoint: m.creditPoint || 32
+                    })) : duFullPaperList).map((p) => (
                       <tr key={p.sr} className="hover:bg-slate-50">
                         <td className="border border-slate-300 p-1 text-center">{p.sr}</td>
                         <td className="border border-slate-300 p-1 text-center font-mono">{p.code}</td>
