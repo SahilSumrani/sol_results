@@ -145,7 +145,7 @@ export const StudentDashboard = () => {
                           className="h-24 w-auto object-contain ml-auto"
                         />
                         <span className="text-[11px] font-mono text-maroon-800 font-bold block mt-1" style={{ color: '#800000' }}>
-                          DVFNO: 1638333
+                          DVFNO: {String(studentRollNo || '23345227188').slice(-6)}833
                         </span>
                       </div>
                     </td>
