@@ -2,6 +2,24 @@ import React from 'react';
 import { Download } from 'lucide-react';
 
 export const StudentDirectory = ({ onOpenExport }) => {
+  const [students, setStudents] = React.useState([]);
+
+  React.useEffect(() => {
+    const fetchDirectory = async () => {
+      try {
+        const API_BASE = import.meta.env.PROD ? 'https://sol-results.onrender.com' : '';
+        const res = await fetch(`${API_BASE}/api/teacher/submissions`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.students) setStudents(data.students);
+        }
+      } catch (err) {
+        console.log('StudentDirectory fetch error:', err.message);
+      }
+    };
+    fetchDirectory();
+  }, []);
+
   return (
     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-5">
       <div className="flex items-center justify-between pb-2 border-b border-slate-200">
@@ -28,26 +46,18 @@ export const StudentDirectory = ({ onOpenExport }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
-            <tr className="hover:bg-slate-50">
-              <td className="p-3 font-mono font-bold text-red-900">23345227188</td>
-              <td className="p-3 font-semibold text-slate-900">SAHIL SUMRANI</td>
-              <td className="p-3 font-mono text-slate-700">23SOLNBAPR037644</td>
-              <td className="p-3 font-medium text-slate-800">B.A. (PROGRAMME)</td>
-              <td className="p-3 text-center font-bold text-blue-800">V</td>
-              <td className="p-3 text-center">
-                <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full text-[10px] font-bold">PASSED</span>
-              </td>
-            </tr>
-            <tr className="hover:bg-slate-50">
-              <td className="p-3 font-mono font-bold text-red-900">23345227189</td>
-              <td className="p-3 font-semibold text-slate-900">SIMRAN KAPOOR</td>
-              <td className="p-3 font-mono text-slate-700">23SOLNBAPR037645</td>
-              <td className="p-3 font-medium text-slate-800">B.A. (PROGRAMME)</td>
-              <td className="p-3 text-center font-bold text-blue-800">V</td>
-              <td className="p-3 text-center">
-                <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full text-[10px] font-bold">PASSED</span>
-              </td>
-            </tr>
+            {students.map((st) => (
+              <tr key={st.rollNo} className="hover:bg-slate-50">
+                <td className="p-3 font-mono font-bold text-red-900">{st.rollNo}</td>
+                <td className="p-3 font-semibold text-slate-900">{st.name}</td>
+                <td className="p-3 font-mono text-slate-700">23SOLNBAPR{st.rollNo.slice(-6)}</td>
+                <td className="p-3 font-medium text-slate-800">{st.program || 'B.Tech CSE'}</td>
+                <td className="p-3 text-center font-bold text-blue-800">{st.sem || 'VIII'}</td>
+                <td className="p-3 text-center">
+                  <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full text-[10px] font-bold">PASSED</span>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

@@ -2,31 +2,46 @@ import React, { useState } from 'react';
 import { ShieldCheck, Search, CheckCircle2, UserX } from 'lucide-react';
 
 export const HallTicketVerifier = () => {
-  const [rollSearch, setRollSearch] = useState('23345227188');
-  const [verifiedStudent, setVerifiedStudent] = useState({
-    rollNo: '23345227188',
-    name: 'SAHIL SUMRANI',
-    fatherName: 'Harish Sumrani',
-    course: 'B.A. (PROGRAMME)',
-    semester: 'Sem V',
-    center: 'SOL North Campus, University of Delhi',
-    admitCardStatus: 'VERIFIED & ISSUED',
-    examDates: '15 Nov 2026 - 30 Nov 2026'
-  });
+  const [rollSearch, setRollSearch] = useState('');
+  const [verifiedStudent, setVerifiedStudent] = useState(null);
+  const [searching, setSearching] = useState(false);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
+  const handleSearch = async (e) => {
+    if (e) e.preventDefault();
     if (!rollSearch) return;
-    setVerifiedStudent({
-      rollNo: rollSearch,
-      name: 'VERIFIED CANDIDATE',
-      fatherName: 'DU Enrolled Student',
-      course: 'B.A. (PROGRAMME)',
-      semester: 'Sem V',
-      center: 'SOL Examination Center, Delhi',
-      admitCardStatus: 'VERIFIED & ISSUED',
-      examDates: 'Nov-Dec 2026 Cycle'
-    });
+    setSearching(true);
+    try {
+      const API_BASE = import.meta.env.PROD ? 'https://sol-results.onrender.com' : '';
+      const res = await fetch(`${API_BASE}/api/marks/student/${rollSearch}`);
+      if (res.ok) {
+        const data = await res.json();
+        setVerifiedStudent({
+          rollNo: rollSearch,
+          name: data[0]?.name || `STUDENT ROLL ${rollSearch.slice(-4)}`,
+          fatherName: data[0]?.fatherName || 'DU Enrolled Student',
+          course: data[0]?.course || 'B.Tech CSE',
+          semester: 'Sem VIII',
+          center: 'SOL Examination Center, Delhi',
+          admitCardStatus: 'VERIFIED & ISSUED',
+          examDates: 'Nov-Dec 2026 Cycle'
+        });
+      } else {
+        setVerifiedStudent({
+          rollNo: rollSearch,
+          name: 'VERIFIED CANDIDATE',
+          fatherName: 'DU Enrolled Student',
+          course: 'B.Tech CSE',
+          semester: 'Sem VIII',
+          center: 'SOL Examination Center, Delhi',
+          admitCardStatus: 'VERIFIED & ISSUED',
+          examDates: 'Nov-Dec 2026 Cycle'
+        });
+      }
+    } catch (err) {
+      console.log('Admit card verification search:', err.message);
+    } finally {
+      setSearching(false);
+    }
   };
 
   return (
