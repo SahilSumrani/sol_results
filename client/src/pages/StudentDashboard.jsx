@@ -168,7 +168,7 @@ export const StudentDashboard = () => {
 
               {/* Date of Printing */}
               <div className="text-right text-[11px]" style={{ color: '#800000' }}>
-                Date of Printing: 01 Sep 2026
+                Date of Printing: {new Date().toLocaleDateString('en-GB', { day: '02-digit', month: 'short', year: 'numeric' })}
               </div>
 
               {/* 3. Student Details Table */}
