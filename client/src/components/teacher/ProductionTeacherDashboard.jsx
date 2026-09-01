@@ -56,30 +56,33 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
   const [auditLogs, setAuditLogs] = useState([
     { id: 1, submissionId: 'SUB-2026-00105', rollNo: '240145', name: 'Rohan Verma', paperCode: 'CS401', field: 'Internal Marks', prevVal: '27', newVal: '31', user: 'Dr. Rahul Sharma', reason: 'Re-evaluation & answer script check', date: '02 Sep 2026 12:45 AM' }
   ]);
+  
+  // Dynamic REST API Integration & Loading States
+  const [loading, setLoading] = useState(false);
+  const [submissionsList, setSubmissionsList] = useState([]);
+  const [studentsList, setStudentsList] = useState([]);
+  const [assignedSubjects, setAssignedSubjects] = useState([]);
 
-  // Assigned Subjects List
-  const assignedSubjects = [
-    { code: 'CS401', name: 'Artificial Intelligence', program: 'B.Tech CSE', semester: 'VIII', students: 62, status: 'Pending' },
-    { code: 'CS402', name: 'Machine Learning', program: 'B.Tech CSE', semester: 'VIII', students: 58, status: 'Submitted' },
-    { code: 'CS403', name: 'Deep Learning Systems', program: 'B.Tech IT', semester: 'VIII', students: 34, status: 'Draft' },
-    { code: 'CS404', name: 'Cloud Computing', program: 'B.Tech CSE', semester: 'VI', students: 28, status: 'Submitted' }
-  ];
-
-  // Submissions Log Data
-  const [submissionsList, setSubmissionsList] = useState([
-    { id: 'SUB-2026-00182', subject: 'Artificial Intelligence (CS401)', class: 'B.Tech CSE - 4th Year', examType: 'Internal Assessment', students: 62, date: '02 Sept 2026', status: 'Under Review', rejectionReason: null },
-    { id: 'SUB-2026-00105', subject: 'AI Lab Practical (CS401L)', class: 'B.Tech CSE - 4th Year', examType: 'Practical Lab', students: 58, date: '01 Sept 2026', status: 'Correction Required', rejectionReason: 'HOD Rejection: Roll No. 240104 and 240145 marks need verification against lab record sheets.' },
-    { id: 'SUB-2026-00140', subject: 'Machine Learning (CS402)', class: 'B.Tech CSE - 4th Year', examType: 'Practical Lab', students: 58, date: '28 Aug 2026', status: 'Approved', rejectionReason: null },
-    { id: 'SUB-2026-00095', subject: 'Cloud Computing (CS404)', class: 'B.Tech CSE - 3rd Year', examType: 'End-Sem Theory', students: 28, date: '15 Aug 2026', status: 'Published', rejectionReason: null }
-  ]);
-
-  // Students List
-  const studentsList = [
-    { rollNo: '240101', name: 'Aman Kumar', program: 'B.Tech CSE', sem: 'VIII', sec: 'A', status: 'Verified' },
-    { rollNo: '240102', name: 'Rahul Sharma', program: 'B.Tech CSE', sem: 'VIII', sec: 'A', status: 'Verified' },
-    { rollNo: '240145', name: 'Rohan Verma', program: 'B.Tech CSE', sem: 'VIII', sec: 'B', status: 'Pending Review' },
-    { rollNo: '240146', name: 'Sneha Gupta', program: 'B.Tech CSE', sem: 'VIII', sec: 'B', status: 'Verified' }
-  ];
+  // Fetch Submissions & Active Assigned Data on Mount / Step Change
+  useEffect(() => {
+    const fetchTeacherData = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/teacher/submissions');
+        if (res.ok) {
+          const data = await res.json();
+          setSubmissionsList(data.submissions || []);
+          if (data.assignedSubjects) setAssignedSubjects(data.assignedSubjects);
+          if (data.students) setStudentsList(data.students);
+        }
+      } catch (err) {
+        console.log('API Fetch fallback active:', err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTeacherData();
+  }, []);
 
   const handleSelectSubject = (subj) => {
     setSelectedSubject(subj);

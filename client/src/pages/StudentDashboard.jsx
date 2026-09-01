@@ -29,13 +29,27 @@ export const StudentDashboard = () => {
 
   const [captchaError, setCaptchaError] = useState('');
 
-  const handleSearchSubmit = (e) => {
+  const [dbMarks, setDbMarks] = useState([]);
+
+  const handleSearchSubmit = async (e) => {
     e.preventDefault();
     if (captchaInput.trim() !== captchaCode.trim()) {
       setCaptchaError('Invalid Captcha Code! Please enter correct code.');
       return;
     }
     setCaptchaError('');
+    
+    // Fetch live student marks from MySQL Database API
+    try {
+      const res = await fetch(`/api/marks/student/${rollNo || '23345227188'}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.length > 0) setDbMarks(data);
+      }
+    } catch (err) {
+      console.log('Using default marks structure for student view:', err.message);
+    }
+
     setShowMarksheet(true);
     confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
   };
