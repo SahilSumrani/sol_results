@@ -141,7 +141,9 @@ CREATE TABLE `marks_audit` (
 INSERT INTO `users` (`name`, `email`, `password`, `role`, `rollNo`, `course`, `department`) VALUES
 ('System Admin / Controller Exam', 'admin@sol.du.ac.in', 'admin123', 'ADMIN', NULL, NULL, 'Examination Branch'),
 ('Dr. Rahul Sharma', 'teacher@sol.du.ac.in', 'teacher123', 'TEACHER', NULL, 'B.Tech CSE', 'Computer Science & Engineering'),
-('Sahil Sumrani', 'student@sol.du.ac.in', 'student123', 'STUDENT', '240101', 'B.Tech CSE', 'School of Open Learning');
+('Sahil Sumrani', 'student@sol.du.ac.in', 'student123', 'STUDENT', '240101', 'B.Tech CSE', 'School of Open Learning'),
+('Rohan Verma', 'rohan@sol.du.ac.in', 'student123', 'STUDENT', '240102', 'B.Tech CSE', 'School of Open Learning'),
+('Ananya Sen', 'ananya@sol.du.ac.in', 'student123', 'STUDENT', '240103', 'B.Tech CSE', 'School of Open Learning');
 
 INSERT INTO `subjects` (`code`, `name`, `course`, `semester`, `maxMarks`, `assessmentType`) VALUES
 ('CS401L', 'Artificial Intelligence Lab', 'B.Tech CSE', 'VIII', 40, 'Practical');

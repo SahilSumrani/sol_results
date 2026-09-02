@@ -305,6 +305,8 @@ sqliteDb.serialize(() => {
       stmt.run("System Admin", "admin@sol.du.ac.in", "admin123", "ADMIN", null, null, "Examination Branch");
       stmt.run("Dr. Rahul Sharma", "teacher@sol.du.ac.in", "teacher123", "TEACHER", null, "B.Tech CSE", "Computer Science & Engineering");
       stmt.run("Sahil Sumrani", "student@sol.du.ac.in", "student123", "STUDENT", "240101", "B.Tech CSE", "School of Open Learning");
+      stmt.run("Rohan Verma", "rohan@sol.du.ac.in", "student123", "STUDENT", "240102", "B.Tech CSE", "School of Open Learning");
+      stmt.run("Ananya Sen", "ananya@sol.du.ac.in", "student123", "STUDENT", "240103", "B.Tech CSE", "School of Open Learning");
       stmt.finalize();
 
       sqliteDb.run("INSERT INTO subjects (code, name, course, semester, maxMarks, assessmentType) VALUES ('CS401L', 'Artificial Intelligence Lab', 'B.Tech CSE', 'VIII', 40, 'Practical')");
