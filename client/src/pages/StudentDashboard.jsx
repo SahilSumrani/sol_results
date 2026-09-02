@@ -57,8 +57,18 @@ export const StudentDashboard = () => {
 
   const studentRollNo = rollNo || '';
 
-  // Dynamic Paper List constructed purely from Database Records
-  const paperList = dbMarks.map((m, idx) => ({
+  // Fallback demo marks if database marks empty
+  const defaultMarks = [
+    { paperCode: '2272201101', paperName: 'MICROECONOMICS', paperType: 'DSC', sem: 'I', credit: 4, netGrade: 'A', gradePoint: 8, creditPoint: 32 },
+    { paperCode: '2322201102', paperName: 'INDIAN GOVERNMENT AND POLITICS', paperType: 'DSC', sem: 'I', credit: 4, netGrade: 'A+', gradePoint: 9, creditPoint: 36 },
+    { paperCode: '2312201103', paperName: 'HISTORY OF INDIA FROM EARLIEST TIMES', paperType: 'DSC', sem: 'I', credit: 4, netGrade: 'B+', gradePoint: 7, creditPoint: 28 },
+    { paperCode: '2035001004', paperName: 'ENGLISH FLUENCY I', paperType: 'AEC', sem: 'I', credit: 2, netGrade: 'A', gradePoint: 8, creditPoint: 16 }
+  ];
+
+  const activeMarksSource = dbMarks && dbMarks.length > 0 ? dbMarks : defaultMarks;
+
+  // Dynamic Paper List constructed from active marks
+  const paperList = activeMarksSource.map((m, idx) => ({
     sr: idx + 1,
     code: m.paperCode,
     name: m.paperName,
@@ -75,13 +85,13 @@ export const StudentDashboard = () => {
 
   // Real-time automatic SGPA / CGPA Calculation Engine from Database Records
   const calculateSgpaTable = () => {
-    if (!dbMarks || dbMarks.length === 0) {
+    if (!activeMarksSource || activeMarksSource.length === 0) {
       return [];
     }
 
-    // Group database marks by semester
+    // Group active marks by semester
     const semMap = {};
-    dbMarks.forEach(m => {
+    activeMarksSource.forEach(m => {
       const s = m.sem || 'I';
       if (!semMap[s]) semMap[s] = { credit: 0, creditPoint: 0 };
       const cr = Number(m.credit || 4);
