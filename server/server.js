@@ -424,9 +424,13 @@ app.post('/api/teacher/re-evaluation/update', async (req, res) => {
   }
 });
 
-const PORT = 5000;
-app.listen(PORT, () => {
-  console.log(`High-Performance ERP Server running on http://localhost:${PORT}`);
-});
+const PORT = process.env.PORT || 5000;
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`High-Performance ERP Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
 
 

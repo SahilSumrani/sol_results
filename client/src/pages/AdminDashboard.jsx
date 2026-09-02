@@ -37,7 +37,8 @@ export const AdminDashboard = () => {
   React.useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/admin/analytics');
+        const API_BASE = typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:5000';
+        const res = await fetch(`${API_BASE}/api/admin/analytics`);
         if (res.ok) {
           const data = await res.json();
           setAnalytics(data);

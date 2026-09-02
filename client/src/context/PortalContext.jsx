@@ -15,7 +15,7 @@ export const PortalProvider = ({ children }) => {
   const [logs, setLogs] = useState([]);
   const [facultyList, setFacultyList] = useState([]);
 
-  const API_BASE = 'http://localhost:5000';
+  const API_BASE = typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:5000';
 
   // Fetch Portal Data on Mount or User Login
   const refreshData = async () => {

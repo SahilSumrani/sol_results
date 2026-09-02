@@ -41,7 +41,7 @@ export const StudentDashboard = () => {
     
     // Fetch live student marks from MySQL Database API
     try {
-      const API_BASE = 'http://localhost:5000';
+      const API_BASE = typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:5000';
       const res = await fetch(`${API_BASE}/api/marks/student/${rollNo || '240101'}`);
       if (res.ok) {
         const data = await res.json();
