@@ -301,13 +301,13 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
                   <span className="text-lg font-bold text-blue-700">
                     {submissionsList.length > 0 
                       ? `${Math.round((submissionsList.filter(s => s.status === 'Approved' || s.status === 'Published' || s.status === 'APPROVED').length / submissionsList.length) * 100)}%` 
-                      : '100%'}
+                      : '0%'}
                   </span>
                 </div>
                 <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
                   <div 
                     className="bg-blue-600 h-full rounded-full transition-all" 
-                    style={{ width: submissionsList.length > 0 ? `${Math.round((submissionsList.filter(s => s.status === 'Approved' || s.status === 'Published' || s.status === 'APPROVED').length / submissionsList.length) * 100)}%` : '100%' }}
+                    style={{ width: submissionsList.length > 0 ? `${Math.round((submissionsList.filter(s => s.status === 'Approved' || s.status === 'Published' || s.status === 'APPROVED').length / submissionsList.length) * 100)}%` : '0%' }}
                   ></div>
                 </div>
               </div>
