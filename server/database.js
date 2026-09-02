@@ -311,6 +311,15 @@ sqliteDb.serialize(() => {
 
       sqliteDb.run("INSERT INTO subjects (code, name, course, semester, maxMarks, assessmentType) VALUES ('CS401L', 'Artificial Intelligence Lab', 'B.Tech CSE', 'VIII', 40, 'Practical')");
       sqliteDb.run("INSERT INTO teacher_assignments (teacherId, teacherEmail, teacherName, subjectCode, subjectName, course, semester, section) VALUES (2, 'teacher@sol.du.ac.in', 'Dr. Rahul Sharma', 'CS401L', 'Artificial Intelligence Lab', 'B.Tech CSE', 'VIII', 'A')");
+
+      // Auto Seed Marks
+      const marksStmt = sqliteDb.prepare("INSERT INTO marks (submissionId, rollNo, studentName, paperCode, paperName, paperType, sem, credit, thObt, thMax, tuObt, tuMax, prObt, prMax, totalObt, netGrade, gradePoint, creditPoint, status, uploadedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+      marksStmt.run('SUB-2026-001', '23345227188', 'Sahil Sumrani', '2272201101', 'MICROECONOMICS', 'DSC', 'I', 4, 62, 75, 20, 25, 0, 0, 82, 'A+', 9, 36, 'PUBLISHED', 'teacher@sol.du.ac.in');
+      marksStmt.run('SUB-2026-001', '23345227188', 'Sahil Sumrani', '2322201102', 'INDIAN GOVERNMENT AND POLITICS', 'DSC', 'I', 4, 58, 75, 18, 25, 0, 0, 76, 'A', 8, 32, 'PUBLISHED', 'teacher@sol.du.ac.in');
+      marksStmt.run('SUB-2026-001', '240101', 'Sahil Sumrani', '2272201101', 'MICROECONOMICS', 'DSC', 'I', 4, 62, 75, 20, 25, 0, 0, 82, 'A+', 9, 36, 'PUBLISHED', 'teacher@sol.du.ac.in');
+      marksStmt.run('SUB-2026-002', '240102', 'Rohan Verma', '2272201101', 'MICROECONOMICS', 'DSC', 'I', 4, 65, 75, 22, 25, 0, 0, 87, 'O', 10, 40, 'PUBLISHED', 'teacher@sol.du.ac.in');
+      marksStmt.run('SUB-2026-003', '240103', 'Ananya Sen', '2272201101', 'MICROECONOMICS', 'DSC', 'I', 4, 59, 75, 18, 25, 0, 0, 77, 'A', 8, 32, 'PUBLISHED', 'teacher@sol.du.ac.in');
+      marksStmt.finalize();
     }
   });
 });

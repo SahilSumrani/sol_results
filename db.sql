@@ -151,6 +151,30 @@ INSERT INTO `subjects` (`code`, `name`, `course`, `semester`, `maxMarks`, `asses
 INSERT INTO `teacher_assignments` (`teacherId`, `teacherEmail`, `teacherName`, `subjectCode`, `subjectName`, `course`, `semester`, `section`) VALUES
 (2, 'teacher@sol.du.ac.in', 'Dr. Rahul Sharma', 'CS401L', 'Artificial Intelligence Lab', 'B.Tech CSE', 'VIII', 'A');
 
+INSERT INTO `marks` (`submissionId`, `rollNo`, `studentName`, `paperCode`, `paperName`, `paperType`, `sem`, `credit`, `thObt`, `thMax`, `tuObt`, `tuMax`, `prObt`, `prMax`, `totalObt`, `netGrade`, `gradePoint`, `creditPoint`, `status`, `uploadedBy`) VALUES
+-- Marks for Sahil Sumrani (23345227188 / 240101)
+('SUB-2026-001', '23345227188', 'Sahil Sumrani', '2272201101', 'MICROECONOMICS', 'DSC', 'I', 4, 62, 75, 20, 25, 0, 0, 82, 'A+', 9, 36, 'PUBLISHED', 'teacher@sol.du.ac.in'),
+('SUB-2026-001', '23345227188', 'Sahil Sumrani', '2322201102', 'INDIAN GOVERNMENT AND POLITICS', 'DSC', 'I', 4, 58, 75, 18, 25, 0, 0, 76, 'A', 8, 32, 'PUBLISHED', 'teacher@sol.du.ac.in'),
+('SUB-2026-001', '23345227188', 'Sahil Sumrani', '2312201103', 'HISTORY OF INDIA FROM EARLIEST TIMES', 'DSC', 'I', 4, 52, 75, 16, 25, 0, 0, 68, 'B+', 7, 28, 'PUBLISHED', 'teacher@sol.du.ac.in'),
+('SUB-2026-001', '23345227188', 'Sahil Sumrani', '2035001004', 'ENGLISH FLUENCY I', 'AEC', 'I', 2, 35, 50, 12, 15, 0, 0, 47, 'A', 8, 16, 'PUBLISHED', 'teacher@sol.du.ac.in'),
+
+('SUB-2026-001', '240101', 'Sahil Sumrani', '2272201101', 'MICROECONOMICS', 'DSC', 'I', 4, 62, 75, 20, 25, 0, 0, 82, 'A+', 9, 36, 'PUBLISHED', 'teacher@sol.du.ac.in'),
+('SUB-2026-001', '240101', 'Sahil Sumrani', '2322201102', 'INDIAN GOVERNMENT AND POLITICS', 'DSC', 'I', 4, 58, 75, 18, 25, 0, 0, 76, 'A', 8, 32, 'PUBLISHED', 'teacher@sol.du.ac.in'),
+('SUB-2026-001', '240101', 'Sahil Sumrani', '2312201103', 'HISTORY OF INDIA FROM EARLIEST TIMES', 'DSC', 'I', 4, 52, 75, 16, 25, 0, 0, 68, 'B+', 7, 28, 'PUBLISHED', 'teacher@sol.du.ac.in'),
+('SUB-2026-001', '240101', 'Sahil Sumrani', '2035001004', 'ENGLISH FLUENCY I', 'AEC', 'I', 2, 35, 50, 12, 15, 0, 0, 47, 'A', 8, 16, 'PUBLISHED', 'teacher@sol.du.ac.in'),
+
+-- Marks for Rohan Verma (240102)
+('SUB-2026-002', '240102', 'Rohan Verma', '2272201101', 'MICROECONOMICS', 'DSC', 'I', 4, 65, 75, 22, 25, 0, 0, 87, 'O', 10, 40, 'PUBLISHED', 'teacher@sol.du.ac.in'),
+('SUB-2026-002', '240102', 'Rohan Verma', '2322201102', 'INDIAN GOVERNMENT AND POLITICS', 'DSC', 'I', 4, 60, 75, 19, 25, 0, 0, 79, 'A+', 9, 36, 'PUBLISHED', 'teacher@sol.du.ac.in'),
+('SUB-2026-002', '240102', 'Rohan Verma', '2312201103', 'HISTORY OF INDIA FROM EARLIEST TIMES', 'DSC', 'I', 4, 55, 75, 17, 25, 0, 0, 72, 'A', 8, 32, 'PUBLISHED', 'teacher@sol.du.ac.in'),
+('SUB-2026-002', '240102', 'Rohan Verma', '2035001004', 'ENGLISH FLUENCY I', 'AEC', 'I', 2, 38, 50, 13, 15, 0, 0, 51, 'O', 10, 20, 'PUBLISHED', 'teacher@sol.du.ac.in'),
+
+-- Marks for Ananya Sen (240103)
+('SUB-2026-003', '240103', 'Ananya Sen', '2272201101', 'MICROECONOMICS', 'DSC', 'I', 4, 59, 75, 18, 25, 0, 0, 77, 'A', 8, 32, 'PUBLISHED', 'teacher@sol.du.ac.in'),
+('SUB-2026-003', '240103', 'Ananya Sen', '2322201102', 'INDIAN GOVERNMENT AND POLITICS', 'DSC', 'I', 4, 63, 75, 21, 25, 0, 0, 84, 'A+', 9, 36, 'PUBLISHED', 'teacher@sol.du.ac.in'),
+('SUB-2026-003', '240103', 'Ananya Sen', '2312201103', 'HISTORY OF INDIA FROM EARLIEST TIMES', 'DSC', 'I', 4, 58, 75, 18, 25, 0, 0, 76, 'A', 8, 32, 'PUBLISHED', 'teacher@sol.du.ac.in'),
+('SUB-2026-003', '240103', 'Ananya Sen', '2035001004', 'ENGLISH FLUENCY I', 'AEC', 'I', 2, 36, 50, 12, 15, 0, 0, 48, 'A', 8, 16, 'PUBLISHED', 'teacher@sol.du.ac.in');
+
 COMMIT;
 SET FOREIGN_KEY_CHECKS = 1;
 SET UNIQUE_CHECKS = 1;
