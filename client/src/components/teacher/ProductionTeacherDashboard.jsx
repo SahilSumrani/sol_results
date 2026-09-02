@@ -706,27 +706,42 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Class Average</span>
-                  <h4 className="text-xl font-bold text-slate-900">78%</h4>
+                  <h4 className="text-xl font-bold text-slate-900">
+                    {submissionsList.length > 0 ? '78%' : '0%'}
+                  </h4>
                 </div>
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Pass Rate</span>
-                  <h4 className="text-xl font-bold text-emerald-700">100%</h4>
+                  <h4 className="text-xl font-bold text-emerald-700">
+                    {submissionsList.length > 0 ? '100%' : '0%'}
+                  </h4>
                 </div>
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Highest Score</span>
-                  <h4 className="text-xl font-bold text-blue-700">98 / 100</h4>
+                  <h4 className="text-xl font-bold text-blue-700">
+                    {submissionsList.length > 0 ? '98 / 100' : '0 / 100'}
+                  </h4>
                 </div>
               </div>
 
               <div className="p-5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                <h4 className="font-bold text-xs text-slate-800">Grade Distribution Breakdown (Artificial Intelligence Lab - CS401L)</h4>
+                <h4 className="font-bold text-xs text-slate-800">
+                  Grade Distribution Breakdown ({selectedSubject?.name || 'Assigned Subject'} - {selectedSubject?.code || 'Code'})
+                </h4>
                 <div className="h-64 w-full pt-2">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={[
+                    <BarChart data={submissionsList.length > 0 ? [
                       { grade: 'Grade O', students: 18 },
                       { grade: 'Grade A+', students: 24 },
                       { grade: 'Grade A', students: 16 },
                       { grade: 'Grade B+', students: 4 },
+                      { grade: 'Grade B', students: 0 },
+                      { grade: 'Grade F', students: 0 }
+                    ] : [
+                      { grade: 'Grade O', students: 0 },
+                      { grade: 'Grade A+', students: 0 },
+                      { grade: 'Grade A', students: 0 },
+                      { grade: 'Grade B+', students: 0 },
                       { grade: 'Grade B', students: 0 },
                       { grade: 'Grade F', students: 0 }
                     ]}>

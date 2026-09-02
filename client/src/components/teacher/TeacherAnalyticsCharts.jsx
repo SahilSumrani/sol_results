@@ -8,6 +8,23 @@ export const TeacherAnalyticsCharts = () => {
   const [selectedCourseFilter, setSelectedCourseFilter] = useState('ALL');
   const [activeData, setActiveData] = useState([]);
 
+  const [coursesList, setCoursesList] = useState([]);
+
+  React.useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/admin/courses');
+        if (res.ok) {
+          const data = await res.json();
+          setCoursesList(data);
+        }
+      } catch (err) {
+        console.log('Error fetching courses:', err.message);
+      }
+    };
+    fetchCourses();
+  }, []);
+
   React.useEffect(() => {
     const fetchChartsData = async () => {
       try {
@@ -48,9 +65,9 @@ export const TeacherAnalyticsCharts = () => {
             className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-bold text-xs text-blue-900 outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer"
           >
             <option value="ALL">All Enrolled Courses</option>
-            <option value="B.A. (Prog)">B.A. (PROGRAMME)</option>
-            <option value="B.Com (Hons)">B.COM (HONS)</option>
-            <option value="B.A. English">B.A. (HONS) ENGLISH</option>
+            {coursesList.map((c, i) => (
+              <option key={i} value={c.name || c.code}>{c.name || c.code}</option>
+            ))}
           </select>
         </div>
       </div>
