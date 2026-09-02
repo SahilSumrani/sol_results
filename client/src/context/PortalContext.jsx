@@ -103,8 +103,22 @@ export const PortalProvider = ({ children }) => {
         return true;
       }
     } catch (err) {
-      console.warn('API login failed:', err.message);
+      console.warn('API login failed, falling back to static auth:', err.message);
     }
+
+    // Static / Mock Fallback Authentication if backend server is offline or credential match
+    if (role === 'ADMIN' && email === 'admin@sol.du.ac.in' && password === 'admin123') {
+      const adminUser = { id: 1, name: 'System Admin', email: 'admin@sol.du.ac.in', role: 'ADMIN', department: 'Examination Branch' };
+      setCurrentUser(adminUser);
+      return true;
+    }
+
+    if (role === 'TEACHER' && email === 'teacher@sol.du.ac.in' && password === 'teacher123') {
+      const teacherUser = { id: 2, name: 'Dr. Rajesh Sharma', email: 'teacher@sol.du.ac.in', role: 'TEACHER', department: 'Computer Science' };
+      setCurrentUser(teacherUser);
+      return true;
+    }
+
     return false;
   };
 
