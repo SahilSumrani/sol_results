@@ -13,9 +13,9 @@ export const AdminLoginPage = () => {
     return <AdminDashboard />;
   }
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const success = login(email, password, 'ADMIN');
+    const success = await login(email, password, 'ADMIN');
     if (!success) {
       setError('Invalid Admin credentials! Default: admin@sol.du.ac.in / admin123');
     }

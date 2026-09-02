@@ -13,9 +13,9 @@ export const TeacherLoginPage = () => {
     return <TeacherDashboard />;
   }
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const success = login(email, password, 'TEACHER');
+    const success = await login(email, password, 'TEACHER');
     if (!success) {
       setError('Invalid Teacher credentials! Default: teacher@sol.du.ac.in / teacher123');
     }
