@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 
 export const CustomExportModal = ({ isOpen, onClose, onExport }) => {
-  const [selectedFy, setSelectedFy] = useState('2025-26');
-  const [selectedCourse, setSelectedCourse] = useState('B.A. (PROGRAMME)');
-  const [selectedSem, setSelectedSem] = useState('V');
+  const [selectedFy, setSelectedFy] = useState('2026-27');
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const [selectedSem, setSelectedSem] = useState('VIII');
+  const [coursesList, setCoursesList] = useState([]);
   const [fields, setFields] = useState({
     rollNo: true,
     studentName: true,
@@ -15,6 +16,22 @@ export const CustomExportModal = ({ isOpen, onClose, onExport }) => {
     netGrade: true,
     status: true
   });
+
+  React.useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/admin/courses');
+        if (res.ok) {
+          const data = await res.json();
+          setCoursesList(data);
+          if (data.length > 0) setSelectedCourse(data[0].name || data[0].code);
+        }
+      } catch (err) {
+        console.log('Error fetching courses:', err.message);
+      }
+    };
+    fetchCourses();
+  }, []);
 
   if (!isOpen) return null;
 
@@ -42,27 +59,35 @@ export const CustomExportModal = ({ isOpen, onClose, onExport }) => {
           <div>
             <label className="block font-bold text-slate-700 mb-1">Financial Year</label>
             <select value={selectedFy} onChange={(e) => setSelectedFy(e.target.value)} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 font-bold text-slate-900">
+              <option value="2026-27">2026-27</option>
               <option value="2025-26">2025-26</option>
               <option value="2024-25">2024-25</option>
-              <option value="2023-24">2023-24</option>
             </select>
           </div>
 
           <div>
             <label className="block font-bold text-slate-700 mb-1">Course</label>
             <select value={selectedCourse} onChange={(e) => setSelectedCourse(e.target.value)} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 font-bold text-slate-900">
-              <option value="B.A. (PROGRAMME)">B.A. (Prog)</option>
-              <option value="B.COM (HONS)">B.Com (Hons)</option>
-              <option value="B.A. (HONS) ENGLISH">B.A. English</option>
+              {coursesList.length > 0 ? (
+                coursesList.map((c, i) => (
+                  <option key={i} value={c.name || c.code}>{c.name || c.code}</option>
+                ))
+              ) : (
+                <option value="B.Tech CSE">B.Tech CSE</option>
+              )}
             </select>
           </div>
 
           <div>
             <label className="block font-bold text-slate-700 mb-1">Semester</label>
             <select value={selectedSem} onChange={(e) => setSelectedSem(e.target.value)} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 font-bold text-slate-900">
+              <option value="VIII">Semester VIII</option>
+              <option value="VII">Semester VII</option>
+              <option value="VI">Semester VI</option>
               <option value="V">Semester V</option>
               <option value="IV">Semester IV</option>
               <option value="III">Semester III</option>
+              <option value="II">Semester II</option>
               <option value="I">Semester I</option>
             </select>
           </div>

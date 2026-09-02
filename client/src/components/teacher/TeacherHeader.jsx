@@ -33,7 +33,7 @@ export const TeacherHeader = ({
       <div className="flex items-center space-x-3">
         <div className="bg-slate-100 border border-slate-200 px-3.5 py-1.5 rounded-xl text-xs font-extrabold text-slate-800 flex items-center space-x-2">
           <Award className="w-4 h-4 text-blue-600" />
-          <span>Faculty: {currentUser?.name || 'Dr. Rajesh Sharma'}</span>
+          <span>Faculty: {currentUser?.name || 'Faculty User'}</span>
         </div>
       </div>
     </header>

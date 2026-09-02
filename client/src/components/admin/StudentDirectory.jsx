@@ -7,11 +7,11 @@ export const StudentDirectory = ({ onOpenExport }) => {
   React.useEffect(() => {
     const fetchDirectory = async () => {
       try {
-        const API_BASE = import.meta.env.PROD ? 'https://sol-results.onrender.com' : '';
-        const res = await fetch(`${API_BASE}/api/teacher/submissions`);
+        const API_BASE = 'http://localhost:5000';
+        const res = await fetch(`${API_BASE}/api/admin/students`);
         if (res.ok) {
           const data = await res.json();
-          if (data.students) setStudents(data.students);
+          setStudents(data);
         }
       } catch (err) {
         console.log('StudentDirectory fetch error:', err.message);
@@ -46,18 +46,24 @@ export const StudentDirectory = ({ onOpenExport }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
-            {students.map((st) => (
-              <tr key={st.rollNo} className="hover:bg-slate-50">
-                <td className="p-3 font-mono font-bold text-red-900">{st.rollNo}</td>
-                <td className="p-3 font-semibold text-slate-900">{st.name}</td>
-                <td className="p-3 font-mono text-slate-700">23SOLNBAPR{st.rollNo.slice(-6)}</td>
-                <td className="p-3 font-medium text-slate-800">{st.program || 'B.Tech CSE'}</td>
-                <td className="p-3 text-center font-bold text-blue-800">{st.sem || 'VIII'}</td>
-                <td className="p-3 text-center">
-                  <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full text-[10px] font-bold">PASSED</span>
-                </td>
+            {students && students.length > 0 ? (
+              students.map((st, idx) => (
+                <tr key={st.rollNo || idx} className="hover:bg-slate-50">
+                  <td className="p-3 font-mono font-bold text-red-900">{st.rollNo || `24010${st.id}`}</td>
+                  <td className="p-3 font-semibold text-slate-900">{st.name}</td>
+                  <td className="p-3 font-mono text-slate-700">23SOLNBAPR{String(st.rollNo || st.id).slice(-6)}</td>
+                  <td className="p-3 font-medium text-slate-800">{st.course || st.program || 'B.Tech CSE'}</td>
+                  <td className="p-3 text-center font-bold text-blue-800">{st.sem || 'VIII'}</td>
+                  <td className="p-3 text-center">
+                    <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full text-[10px] font-bold">ENROLLED</span>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="6" className="p-6 text-center text-slate-500 font-medium">No students registered yet in MySQL database.</td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

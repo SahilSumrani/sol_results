@@ -74,39 +74,23 @@ export const AuditAndPdfModals = ({
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-[11px] font-sans">
-                <p>Subject: <strong>Artificial Intelligence (CS401)</strong></p>
+                <p>Subject: <strong>Artificial Intelligence Lab (CS401L)</strong></p>
                 <p>Program: <strong>B.Tech CSE - 4th Year</strong></p>
-                <p>Total Students: <strong>62</strong></p>
-                <p>Status: <strong className="text-emerald-700">APPROVED BY HOD</strong></p>
+                <p>Status: <strong className="text-emerald-700">SUBMITTED FOR APPROVAL</strong></p>
               </div>
 
-              <table className="w-full text-left border-collapse border border-slate-300 text-[11px]">
-                <thead className="bg-slate-200 font-bold">
-                  <tr>
-                    <th className="p-2 border border-slate-300">Roll No</th>
-                    <th className="p-2 border border-slate-300">Student Name</th>
-                    <th className="p-2 border border-slate-300 text-center">Marks</th>
-                    <th className="p-2 border border-slate-300 text-center">Grade</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr><td className="p-2 border border-slate-300">240101</td><td className="p-2 border border-slate-300">Aman Kumar</td><td className="p-2 border border-slate-300 text-center">35 / 40</td><td className="p-2 border border-slate-300 text-center font-bold">A</td></tr>
-                  <tr><td className="p-2 border border-slate-300">240102</td><td className="p-2 border border-slate-300">Rahul Sharma</td><td className="p-2 border border-slate-300 text-center">38 / 40</td><td className="p-2 border border-slate-300 text-center font-bold">A+</td></tr>
-                </tbody>
-              </table>
-
-              <div className="flex justify-between pt-4 text-[10px] font-sans text-slate-600">
+              <div className="text-right text-[10px] text-slate-600 font-sans">
                 <p>Submitted By: <strong>{teacherProfile?.name || 'Dr. Rahul Sharma'}</strong></p>
-                <p>Approved By: <strong>HOD Computer Science</strong></p>
+                <p>Approved By: <strong>Controller of Examinations</strong></p>
               </div>
             </div>
 
             <div className="flex justify-end space-x-3">
-              <button onClick={() => window.print()} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl flex items-center space-x-1.5">
+              <button onClick={() => window.print()} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl flex items-center space-x-1.5 cursor-pointer">
                 <Printer className="w-4 h-4" />
                 <span>Print Official PDF</span>
               </button>
-              <button onClick={() => setPdfPreviewModalOpen(false)} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl">
+              <button onClick={() => setPdfPreviewModalOpen(false)} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl cursor-pointer">
                 Close Report
               </button>
             </div>

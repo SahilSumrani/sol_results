@@ -5,37 +5,36 @@ export const ReEvaluationPanel = () => {
   const [queries, setQueries] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  React.useEffect(() => {
-    const fetchReEvaluations = async () => {
-      setLoading(true);
-      try {
-        const API_BASE = import.meta.env.PROD ? 'https://sol-results.onrender.com' : '';
-        const res = await fetch(`${API_BASE}/api/teacher/submissions`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.students && data.students.length > 0) {
-            setQueries(data.students.slice(0, 2).map((s, idx) => ({
-              id: `q${idx + 1}`,
-              rollNo: s.rollNo,
-              name: s.name,
-              subject: 'Artificial Intelligence',
-              currentGrade: 'B+',
-              requestedReview: 'Theory Re-checking requested',
-              status: 'PENDING'
-            })));
-          }
-        }
-      } catch (err) {
-        console.log('Re-evaluation fetch fallback active:', err.message);
-      } finally {
-        setLoading(false);
+  const fetchReEvaluations = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('http://localhost:5000/api/teacher/re-evaluations');
+      if (res.ok) {
+        const data = await res.json();
+        setQueries(data);
       }
-    };
+    } catch (err) {
+      console.log('Error fetching re-evaluations:', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
     fetchReEvaluations();
   }, []);
 
-  const handleAction = (id, newStatus) => {
-    setQueries(prev => prev.map(q => q.id === id ? { ...q, status: newStatus } : q));
+  const handleAction = async (id, newStatus) => {
+    try {
+      await fetch('http://localhost:5000/api/teacher/re-evaluation/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ queryId: id, status: newStatus })
+      });
+      setQueries(prev => prev.map(q => q.id === id ? { ...q, status: newStatus } : q));
+    } catch (err) {
+      console.error('Error updating re-evaluation status:', err);
+    }
   };
 
   return (
@@ -62,42 +61,48 @@ export const ReEvaluationPanel = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 font-medium">
-            {queries.map((q) => (
-              <tr key={q.id} className="hover:bg-slate-50">
-                <td className="p-3 font-mono font-bold text-red-900">{q.rollNo}</td>
-                <td className="p-3 font-bold text-slate-900">{q.name}</td>
-                <td className="p-3 font-semibold text-slate-800">{q.subject}</td>
-                <td className="p-3 text-center font-bold text-blue-800">{q.currentGrade}</td>
-                <td className="p-3 text-slate-600">{q.requestedReview}</td>
-                <td className="p-3 text-center">
-                  <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                    q.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                  }`}>
-                    {q.status}
-                  </span>
-                </td>
-                <td className="p-3 text-center space-x-2">
-                  {q.status === 'PENDING' ? (
-                    <>
-                      <button 
-                        onClick={() => handleAction(q.id, 'RESOLVED')}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-2.5 py-1 rounded cursor-pointer"
-                      >
-                        Approve Change
-                      </button>
-                      <button 
-                        onClick={() => handleAction(q.id, 'REJECTED')}
-                        className="bg-slate-100 hover:bg-red-50 hover:text-red-600 text-slate-700 font-bold text-xs px-2.5 py-1 rounded cursor-pointer"
-                      >
-                        Keep Grade
-                      </button>
-                    </>
-                  ) : (
-                    <span className="text-slate-400 font-semibold">Completed</span>
-                  )}
-                </td>
+            {queries.length > 0 ? (
+              queries.map((q) => (
+                <tr key={q.id || q.queryId} className="hover:bg-slate-50">
+                  <td className="p-3 font-mono font-bold text-red-900">{q.rollNo}</td>
+                  <td className="p-3 font-bold text-slate-900">{q.studentName || q.name}</td>
+                  <td className="p-3 font-semibold text-slate-800">{q.subjectName || q.subject}</td>
+                  <td className="p-3 text-center font-bold text-blue-800">{q.currentGrade || 'B+'}</td>
+                  <td className="p-3 text-slate-600">{q.requestedReview}</td>
+                  <td className="p-3 text-center">
+                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      q.status === 'RESOLVED' || q.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {q.status}
+                    </span>
+                  </td>
+                  <td className="p-3 text-center space-x-2">
+                    {q.status === 'PENDING' ? (
+                      <>
+                        <button 
+                          onClick={() => handleAction(q.id || q.queryId, 'RESOLVED')}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-2.5 py-1 rounded cursor-pointer"
+                        >
+                          Approve Change
+                        </button>
+                        <button 
+                          onClick={() => handleAction(q.id || q.queryId, 'REJECTED')}
+                          className="bg-slate-100 hover:bg-red-50 hover:text-red-600 text-slate-700 font-bold text-xs px-2.5 py-1 rounded cursor-pointer"
+                        >
+                          Keep Grade
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-slate-400 font-semibold">Completed</span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="7" className="p-6 text-center text-slate-500 font-medium">No re-evaluation queries submitted yet in MySQL database.</td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

@@ -33,7 +33,7 @@ export const AdminHeader = ({
       <div className="flex items-center space-x-3">
         <div className="bg-slate-100 border border-slate-200 px-3.5 py-1.5 rounded-xl text-xs font-extrabold text-slate-800 flex items-center space-x-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span>System Admin (FY 2025-26)</span>
+          <span>System Admin (FY 2026-27)</span>
         </div>
         <button
           onClick={onOpenExport}

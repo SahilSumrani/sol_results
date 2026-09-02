@@ -24,42 +24,32 @@ export const AdminDashboard = () => {
   const [newFacultySubj, setNewFacultySubj] = useState('');
   const [generatedCreds, setGeneratedCreds] = useState(null);
 
-  // Calculations
-  const pendingCount = marks.filter(m => m.status === 'PENDING').length;
-  const publishedCount = marks.filter(m => m.status === 'PUBLISHED').length;
+  // Dynamic Analytics State from Database
+  const [analytics, setAnalytics] = useState({
+    publishedCount: 0,
+    pendingCount: 0,
+    weeklyTrafficData: [],
+    facultyEvaluationProgress: [],
+    gradeDistributionData: [],
+    courseWiseData: []
+  });
 
-  // Real-time Analytics Data Arrays
-  const weeklyTrafficData = [
-    { day: 'Mon', queries: 4200, published: 120 },
-    { day: 'Tue', queries: 5800, published: 340 },
-    { day: 'Wed', queries: 8900, published: 510 },
-    { day: 'Thu', queries: 12400, published: 890 },
-    { day: 'Fri', queries: 15600, published: 1200 },
-    { day: 'Sat', queries: 9800, published: 620 },
-    { day: 'Sun', queries: 6400, published: 290 }
-  ];
+  React.useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/admin/analytics');
+        if (res.ok) {
+          const data = await res.json();
+          setAnalytics(data);
+        }
+      } catch (err) {
+        console.log('Analytics fetch error:', err.message);
+      }
+    };
+    fetchAnalytics();
+  }, []);
 
-  const facultyEvaluationProgress = [
-    { name: 'Dr. Rajesh Sharma', checked: 1420, verified: 1380, pending: 40, subject: 'Python Programming' },
-    { name: 'Prof. Anita Desai', checked: 980, verified: 920, pending: 60, subject: 'Financial Accounting' },
-    { name: 'Dr. Vikram Malhotra', checked: 1150, verified: 1150, pending: 0, subject: 'Calculus & Algebra' },
-    { name: 'Dr. Meenakshi Sundaram', checked: 860, verified: 810, pending: 50, subject: 'Microeconomics' }
-  ];
-
-  const gradeDistributionData = [
-    { name: 'O Grade', value: 38, color: '#2563eb' },
-    { name: 'A+ Grade', value: 45, color: '#7c3aed' },
-    { name: 'A Grade', value: 30, color: '#059669' },
-    { name: 'B+ Grade', value: 16, color: '#ea580c' },
-    { name: 'F/ER Fail', value: 4, color: '#ef4444' }
-  ];
-
-  const courseWiseData = [
-    { course: 'B.A. (Prog)', checked: 24500, published: 23800 },
-    { course: 'B.Com (Hons)', checked: 18200, published: 17900 },
-    { course: 'B.A. English', checked: 12400, published: 12100 },
-    { course: 'B.A. Pol Sci', checked: 16800, published: 16200 }
-  ];
+  const { publishedCount, pendingCount, weeklyTrafficData, facultyEvaluationProgress, gradeDistributionData, courseWiseData } = analytics;
 
   const pendingMarks = marks.filter(m => 
     m.status === 'PENDING' && 

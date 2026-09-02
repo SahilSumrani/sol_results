@@ -5,34 +5,30 @@ import {
 } from 'recharts';
 
 export const TeacherAnalyticsCharts = () => {
-  const [selectedCourseFilter, setSelectedCourseFilter] = useState('B.A. (Prog)');
+  const [selectedCourseFilter, setSelectedCourseFilter] = useState('ALL');
+  const [activeData, setActiveData] = useState([]);
 
-  const courseWiseDataMap = {
-    'ALL': [
-      { course: 'B.A. (Prog)', checked: 1420, verified: 1380, avgTheory: 58 },
-      { course: 'B.Com (Hons)', checked: 980, verified: 920, avgTheory: 64 },
-      { course: 'B.A. English', checked: 1150, verified: 1150, avgTheory: 60 },
-      { course: 'B.A. Pol Sci', checked: 860, verified: 810, avgTheory: 54 }
-    ],
-    'B.A. (Prog)': [
-      { course: 'Sem I (Python)', checked: 420, verified: 400, avgTheory: 58 },
-      { course: 'Sem III (DBMS)', checked: 380, verified: 370, avgTheory: 62 },
-      { course: 'Sem V (ML & AI)', checked: 350, verified: 340, avgTheory: 55 },
-      { course: 'Sem VII (Data Science)', checked: 270, verified: 270, avgTheory: 60 }
-    ],
-    'B.Com (Hons)': [
-      { course: 'Sem I (Accounting)', checked: 300, verified: 280, avgTheory: 65 },
-      { course: 'Sem III (Corporate Law)', checked: 320, verified: 300, avgTheory: 62 },
-      { course: 'Sem V (Auditing)', checked: 360, verified: 340, avgTheory: 66 }
-    ],
-    'B.A. English': [
-      { course: 'Sem I (Fluency)', checked: 400, verified: 400, avgTheory: 61 },
-      { course: 'Sem III (Literature)', checked: 380, verified: 380, avgTheory: 59 },
-      { course: 'Sem V (Poetry)', checked: 370, verified: 370, avgTheory: 63 }
-    ]
-  };
-
-  const activeData = courseWiseDataMap[selectedCourseFilter] || courseWiseDataMap['ALL'];
+  React.useEffect(() => {
+    const fetchChartsData = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/admin/analytics');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.courseWiseData && data.courseWiseData.length > 0) {
+            setActiveData(data.courseWiseData.map(c => ({
+              course: c.course || 'B.Tech CSE',
+              checked: c.checked || 0,
+              verified: c.published || c.verified || 0,
+              avgTheory: 65
+            })));
+          }
+        }
+      } catch (err) {
+        console.log('Error fetching chart analytics:', err.message);
+      }
+    };
+    fetchChartsData();
+  }, []);
 
   return (
     <div className="space-y-6">

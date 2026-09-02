@@ -20,7 +20,7 @@ export const AnalyticsOverview = ({
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
           <div>
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Evaluated Papers</span>
-            <h3 className="text-2xl font-bold text-slate-900 mt-1">85,246</h3>
+            <h3 className="text-2xl font-bold text-slate-900 mt-1">{publishedCount + pendingCount}</h3>
           </div>
           <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
             <FileSpreadsheet className="w-5 h-5" />
@@ -64,7 +64,7 @@ export const AnalyticsOverview = ({
         {/* Course-Wise Evaluation Volume Bar Chart */}
         <div className="lg:col-span-8 bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
           <div>
-            <h3 className="font-bold text-base text-slate-900">Course-Wise Evaluation Metrics (FY 2025-26)</h3>
+            <h3 className="font-bold text-base text-slate-900">Course-Wise Evaluation Metrics (FY 2026-27)</h3>
             <p className="text-xs text-slate-500 font-medium">Checked papers vs Published results per course</p>
           </div>
 

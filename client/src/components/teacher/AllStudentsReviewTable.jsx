@@ -24,14 +24,23 @@ export const AllStudentsReviewTable = ({
     creditPoint: 28
   });
 
-  const subjectsList = [
-    { code: '2035001003', name: 'ENGLISH FLUENCY-I', type: 'GE', sem: 'I', credit: 4 },
-    { code: '2036000002', name: 'COMMUNICATION IN EVERYDAY LIFE', type: 'SEC', sem: 'I', credit: 2 },
-    { code: '2181001001', name: 'ENVIRONMENTAL SCIENCE: THEORY INTO PRACTICE - I', type: 'AECC', sem: 'I', credit: 2 },
-    { code: '2342011101', name: 'PROGRAMMING FUNDAMENTALS USING PYTHON', type: 'DSC', sem: 'I', credit: 4 },
-    { code: '2342571101', name: 'PROGRAMMING FUNDAMENTALS USING C++', type: 'DSC', sem: 'I', credit: 4 },
-    { code: '2432201101', name: 'BASIC CONCEPTS AND IDEAS IN EDUCATION', type: 'DSC', sem: 'I', credit: 4 }
-  ];
+  const [subjectsList, setSubjectsList] = useState([]);
+
+  React.useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/admin/subjects');
+        if (res.ok) {
+          const data = await res.json();
+          setSubjectsList(data);
+          if (data.length > 0) setSelectedSubjectCode(data[0].code);
+        }
+      } catch (err) {
+        console.log('Error fetching subjects:', err.message);
+      }
+    };
+    fetchSubjects();
+  }, []);
 
   const handleEditClick = (student) => {
     setEditingStudentId(student.rollNo);
@@ -127,7 +136,7 @@ export const AllStudentsReviewTable = ({
                           ))}
                         </select>
                       ) : (
-                        <span>PROGRAMMING FUNDAMENTALS USING PYTHON</span>
+                        <span>{student.paperName || selectedSubject?.name || 'Artificial Intelligence Lab'}</span>
                       )}
                     </td>
 
@@ -141,7 +150,7 @@ export const AllStudentsReviewTable = ({
                           className="w-12 bg-white border border-blue-400 rounded-lg p-1 text-center font-bold text-blue-900 outline-none uppercase"
                         />
                       ) : (
-                        <span>B+</span>
+                        <span>{student.thGrade || 'A'}</span>
                       )}
                     </td>
 
@@ -155,7 +164,7 @@ export const AllStudentsReviewTable = ({
                           className="w-12 bg-white border border-blue-400 rounded-lg p-1 text-center font-bold text-blue-900 outline-none uppercase"
                         />
                       ) : (
-                        <span>O</span>
+                        <span>{student.tuGrade || 'O'}</span>
                       )}
                     </td>
 
@@ -170,7 +179,7 @@ export const AllStudentsReviewTable = ({
                           className="w-12 bg-white border border-blue-400 rounded-lg p-1 text-center font-bold text-blue-900 outline-none uppercase"
                         />
                       ) : (
-                        <span>-</span>
+                        <span>{student.prGrade || '-'}</span>
                       )}
                     </td>
 
@@ -190,7 +199,7 @@ export const AllStudentsReviewTable = ({
                           <option value="C">C</option>
                         </select>
                       ) : (
-                        <span className="bg-blue-50 text-blue-800 px-2 py-0.5 rounded font-bold">B+</span>
+                        <span className="bg-blue-50 text-blue-800 px-2 py-0.5 rounded font-bold">{student.netGrade || 'A'}</span>
                       )}
                     </td>
 

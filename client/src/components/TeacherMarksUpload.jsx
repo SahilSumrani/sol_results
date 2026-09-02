@@ -168,12 +168,12 @@ export const TeacherMarksUpload = ({ selectedSubject, onCloseSuccess }) => {
         <div>
           <div className="flex items-center space-x-2">
             <span className="text-xs bg-blue-100 text-blue-800 font-mono px-2 py-0.5 rounded border border-blue-200 font-bold">
-              {selectedSubject?.code || '2342011101'}
+              {selectedSubject?.code || 'CS401L'}
             </span>
-            <h2 className="text-xl font-bold text-slate-900">{selectedSubject?.name || 'PROGRAMMING FUNDAMENTALS USING PYTHON'}</h2>
+            <h2 className="text-xl font-bold text-slate-900">{selectedSubject?.name || 'Artificial Intelligence Lab'}</h2>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Course: <strong className="text-slate-800">{selectedSubject?.course || 'B.A. (PROGRAMME)'}</strong> | Year: <strong className="text-slate-800">{selectedSubject?.year || '2026'}</strong> | Semester: <strong className="text-slate-800">{selectedSubject?.semester || 'V'}</strong>
+            Course: <strong className="text-slate-800">{selectedSubject?.course || 'B.Tech CSE'}</strong> | Year: <strong className="text-slate-800">{selectedSubject?.year || '2026'}</strong> | Semester: <strong className="text-slate-800">{selectedSubject?.semester || 'VIII'}</strong>
           </p>
         </div>
 

@@ -25,7 +25,47 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------------------------
--- 2. MARK SUBMISSIONS TABLE (Teacher Submission Batch & Admin Approval Status)
+-- 2. COURSES & SUBJECTS TABLES
+-- ------------------------------------------------------------------------------
+DROP TABLE IF EXISTS `courses`;
+CREATE TABLE `courses` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `code` VARCHAR(50) UNIQUE NOT NULL,
+  `name` VARCHAR(255) NOT NULL,
+  `department` VARCHAR(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `subjects`;
+CREATE TABLE `subjects` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `code` VARCHAR(100) UNIQUE NOT NULL,
+  `name` VARCHAR(255) NOT NULL,
+  `course` VARCHAR(255) NOT NULL,
+  `semester` VARCHAR(50) NOT NULL,
+  `maxMarks` INT NOT NULL DEFAULT 40,
+  `assessmentType` VARCHAR(100) NOT NULL DEFAULT 'Practical'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------------------------
+-- 3. TEACHER ASSIGNMENTS TABLE (Admin -> Assign Subject/Class to Teacher)
+-- ------------------------------------------------------------------------------
+DROP TABLE IF EXISTS `teacher_assignments`;
+CREATE TABLE `teacher_assignments` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `teacherId` INT NOT NULL,
+  `teacherEmail` VARCHAR(255) NOT NULL,
+  `teacherName` VARCHAR(255) NOT NULL,
+  `subjectCode` VARCHAR(100) NOT NULL,
+  `subjectName` VARCHAR(255) NOT NULL,
+  `course` VARCHAR(255) NOT NULL,
+  `semester` VARCHAR(50) NOT NULL,
+  `section` VARCHAR(20) NOT NULL DEFAULT 'A',
+  `assignedAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`teacherId`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------------------------
+-- 4. MARK SUBMISSIONS TABLE (Teacher Submission Batch & Admin Approval Status)
 -- ------------------------------------------------------------------------------
 DROP TABLE IF EXISTS `mark_submissions`;
 CREATE TABLE `mark_submissions` (
@@ -34,9 +74,11 @@ CREATE TABLE `mark_submissions` (
   `subjectName` VARCHAR(255) NOT NULL,
   `course` VARCHAR(255) NOT NULL,
   `semester` VARCHAR(50) NOT NULL,
+  `section` VARCHAR(20) DEFAULT 'A',
   `examType` VARCHAR(100) NOT NULL,
+  `maxMarks` INT DEFAULT 40,
   `totalStudents` INT NOT NULL,
-  `status` ENUM('DRAFT', 'PENDING', 'SUBMITTED', 'UNDER REVIEW', 'CORRECTION REQUIRED', 'APPROVED', 'PUBLISHED', 'REJECTED') DEFAULT 'SUBMITTED',
+  `status` ENUM('DRAFT', 'PENDING', 'SUBMITTED', 'UNDER REVIEW', 'CORRECTION REQUIRED', 'APPROVED', 'PUBLISHED', 'REJECTED') DEFAULT 'UNDER REVIEW',
   `teacherEmail` VARCHAR(255) NOT NULL,
   `teacherName` VARCHAR(255) NOT NULL,
   `rejectionReason` TEXT DEFAULT NULL,
@@ -45,7 +87,7 @@ CREATE TABLE `mark_submissions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------------------------
--- 3. MARKS DETAILED TABLE (Individual Student Marks per Subject)
+-- 5. MARKS DETAILED TABLE (Individual Student Marks per Subject)
 -- ------------------------------------------------------------------------------
 DROP TABLE IF EXISTS `marks`;
 CREATE TABLE `marks` (
@@ -60,14 +102,15 @@ CREATE TABLE `marks` (
   `credit` INT NOT NULL DEFAULT 4,
   `thObt` INT DEFAULT 0,
   `thMax` INT DEFAULT 75,
-  `tuObt` INTEGER DEFAULT 0,
+  `tuObt` INT DEFAULT 0,
   `tuMax` INT DEFAULT 25,
   `prObt` INT DEFAULT 0,
-  `prMax` INT DEFAULT 0,
+  `prMax` INT DEFAULT 40,
+  `totalObt` INT DEFAULT 0,
   `netGrade` VARCHAR(10) NOT NULL DEFAULT 'A',
   `gradePoint` INT NOT NULL DEFAULT 8,
   `creditPoint` INT NOT NULL DEFAULT 32,
-  `status` ENUM('DRAFT', 'PENDING', 'SUBMITTED', 'CORRECTION REQUIRED', 'APPROVED', 'PUBLISHED') DEFAULT 'SUBMITTED',
+  `status` ENUM('DRAFT', 'PENDING', 'SUBMITTED', 'UNDER REVIEW', 'CORRECTION REQUIRED', 'APPROVED', 'PUBLISHED') DEFAULT 'UNDER REVIEW',
   `uploadedBy` VARCHAR(255) NOT NULL,
   `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
   INDEX `idx_marks_rollno_status` (`rollNo`, `status`),
@@ -75,7 +118,7 @@ CREATE TABLE `marks` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------------------------
--- 4. MARKS AUDIT HISTORY TABLE (Modifications Log & Security Trail)
+-- 6. MARKS AUDIT HISTORY TABLE (Modifications Log & Security Trail)
 -- ------------------------------------------------------------------------------
 DROP TABLE IF EXISTS `marks_audit`;
 CREATE TABLE `marks_audit` (
@@ -93,13 +136,20 @@ CREATE TABLE `marks_audit` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ==============================================================================
--- OFFICIAL DEFAULT USERS (ADMIN, TEACHER, STUDENT)
+-- DEFAULT INITIAL USERS & DEMO ASSIGNMENT
 -- ==============================================================================
 INSERT INTO `users` (`name`, `email`, `password`, `role`, `rollNo`, `course`, `department`) VALUES
 ('System Admin / Controller Exam', 'admin@sol.du.ac.in', 'admin123', 'ADMIN', NULL, NULL, 'Examination Branch'),
 ('Dr. Rahul Sharma', 'teacher@sol.du.ac.in', 'teacher123', 'TEACHER', NULL, 'B.Tech CSE', 'Computer Science & Engineering'),
-('Sahil Sumrani', 'student@sol.du.ac.in', 'student123', 'STUDENT', '23345227188', '(NEP) B.A. (PROGRAMME)', 'School of Open Learning');
+('Sahil Sumrani', 'student@sol.du.ac.in', 'student123', 'STUDENT', '240101', 'B.Tech CSE', 'School of Open Learning');
+
+INSERT INTO `subjects` (`code`, `name`, `course`, `semester`, `maxMarks`, `assessmentType`) VALUES
+('CS401L', 'Artificial Intelligence Lab', 'B.Tech CSE', 'VIII', 40, 'Practical');
+
+INSERT INTO `teacher_assignments` (`teacherId`, `teacherEmail`, `teacherName`, `subjectCode`, `subjectName`, `course`, `semester`, `section`) VALUES
+(2, 'teacher@sol.du.ac.in', 'Dr. Rahul Sharma', 'CS401L', 'Artificial Intelligence Lab', 'B.Tech CSE', 'VIII', 'A');
 
 COMMIT;
 SET FOREIGN_KEY_CHECKS = 1;
 SET UNIQUE_CHECKS = 1;
+

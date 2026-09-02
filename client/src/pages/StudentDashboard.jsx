@@ -41,8 +41,8 @@ export const StudentDashboard = () => {
     
     // Fetch live student marks from MySQL Database API
     try {
-      const API_BASE = import.meta.env.PROD ? 'https://sol-results.onrender.com' : '';
-      const res = await fetch(`${API_BASE}/api/marks/student/${rollNo || '23345227188'}`);
+      const API_BASE = 'http://localhost:5000';
+      const res = await fetch(`${API_BASE}/api/marks/student/${rollNo || '240101'}`);
       if (res.ok) {
         const data = await res.json();
         if (data && data.length > 0) setDbMarks(data);
@@ -76,13 +76,7 @@ export const StudentDashboard = () => {
   // Real-time automatic SGPA / CGPA Calculation Engine from Database Records
   const calculateSgpaTable = () => {
     if (!dbMarks || dbMarks.length === 0) {
-      return [
-        { sem: 'I', credit: 22, point: 146, sgpa: '6.64', result: 'PASSED', cgpa: '' },
-        { sem: 'II', credit: 22, point: 152, sgpa: '6.91', result: 'PASSED', cgpa: '6.77' },
-        { sem: 'III', credit: 22, point: 144, sgpa: '6.55', result: 'PASSED', cgpa: '' },
-        { sem: 'IV', credit: 22, point: 146, sgpa: '6.64', result: 'PASSED', cgpa: '6.59' },
-        { sem: 'V', credit: 22, point: 156, sgpa: '7.09', result: 'PASSED', cgpa: '6.77' }
-      ];
+      return [];
     }
 
     // Group database marks by semester

@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import { SubmissionsLogTable } from './SubmissionsLogTable';
 import { AuditAndPdfModals } from './AuditAndPdfModals';
+import { usePortal } from '../../context/PortalContext';
 
 export const ProductionTeacherDashboard = ({ onLogout }) => {
   // Navigation Flow States: 'dashboard' | 'subjects' | 'select_exam' | 'upload_method' | 'excel_upload' | 'manual_entry' | 'validation' | 'preview_marks' | 'submission_success' | 'submissions_log' | 'classes' | 'students' | 'reports' | 'notifications'
@@ -34,12 +35,14 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
   const [auditLogModalOpen, setAuditLogModalOpen] = useState(false);
   const [pdfPreviewModalOpen, setPdfPreviewModalOpen] = useState(false);
 
+  const { currentUser } = usePortal ? usePortal() : { currentUser: null };
+
   // Teacher Profile Data
   const teacherProfile = {
-    name: 'Dr. Rahul Sharma',
+    name: currentUser?.name || 'Faculty Member',
     title: 'Assistant Professor',
-    department: 'Computer Science & Engineering',
-    employeeId: 'EMP-2026-894',
+    department: currentUser?.department || 'Computer Science & Engineering',
+    employeeId: currentUser?.employeeId || `EMP-${currentUser?.id || '001'}`,
     academicYear: '2026–27',
     semester: 'Semester VIII'
   };
@@ -49,50 +52,36 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
 
   // Audit Logs Store
   const [auditLogs, setAuditLogs] = useState([]);
-  
-  // Dynamic REST API Integration & Fallback State Guards
   const [loading, setLoading] = useState(false);
-  
-  const defaultSubjects = [
-    { code: 'CS401', name: 'Artificial Intelligence', program: 'B.Tech CSE', semester: 'VIII', students: 62, status: 'Pending' },
-    { code: 'CS401L', name: 'AI Lab Practical', program: 'B.Tech CSE', semester: 'VIII', students: 62, status: 'Correction Required' },
-    { code: 'CS402', name: 'Machine Learning', program: 'B.Tech CSE', semester: 'VIII', students: 58, status: 'Submitted' },
-    { code: 'CS404', name: 'Cloud Computing Architecture', program: 'B.Tech CSE', semester: 'VI', students: 28, status: 'Submitted' }
-  ];
 
-  const defaultSubmissions = [
-    { id: 'SUB-2026-00182', subject: 'Artificial Intelligence (CS401)', class: 'B.Tech CSE - 4th Year', examType: 'Internal Assessment', students: 62, date: '02 Sept 2026', status: 'Under Review', rejectionReason: null },
-    { id: 'SUB-2026-00105', subject: 'AI Lab Practical (CS401L)', class: 'B.Tech CSE - 4th Year', examType: 'Practical Lab', students: 58, date: '01 Sept 2026', status: 'Correction Required', rejectionReason: 'HOD Rejection: Roll No. 240104 and 240145 marks need verification against lab record sheets.' },
-    { id: 'SUB-2026-00140', subject: 'Machine Learning (CS402)', class: 'B.Tech CSE - 4th Year', examType: 'Practical Lab', students: 58, date: '28 Aug 2026', status: 'Approved', rejectionReason: null },
-    { id: 'SUB-2026-00095', subject: 'Cloud Computing Architecture (CS404)', class: 'B.Tech CSE - 3rd Year', examType: 'End-Sem Theory', students: 28, date: '15 Aug 2026', status: 'Published', rejectionReason: null }
-  ];
+  const [submissionsList, setSubmissionsList] = useState([]);
+  const [studentsList, setStudentsList] = useState([]);
+  const [assignedSubjects, setAssignedSubjects] = useState([]);
 
-  const defaultStudents = [
-    { rollNo: '240101', name: 'Aman Kumar', program: 'B.Tech CSE', sem: 'VIII', sec: 'A', status: 'Verified' },
-    { rollNo: '240102', name: 'Rahul Sharma', program: 'B.Tech CSE', sem: 'VIII', sec: 'A', status: 'Verified' },
-    { rollNo: '240145', name: 'Rohan Verma', program: 'B.Tech CSE', sem: 'VIII', sec: 'B', status: 'Pending Review' },
-    { rollNo: '240146', name: 'Sneha Gupta', program: 'B.Tech CSE', sem: 'VIII', sec: 'B', status: 'Verified' }
-  ];
-
-  const [submissionsList, setSubmissionsList] = useState(defaultSubmissions);
-  const [studentsList, setStudentsList] = useState(defaultStudents);
-  const [assignedSubjects, setAssignedSubjects] = useState(defaultSubjects);
-
-  // Fetch Submissions & Active Assigned Data on Mount / Step Change
+  // Fetch Submissions & Active Assigned Data on Mount / Step Change from MySQL API
   useEffect(() => {
     const fetchTeacherData = async () => {
       setLoading(true);
       try {
-        const API_BASE = import.meta.env.PROD ? 'https://sol-results.onrender.com' : '';
-        const res = await fetch(`${API_BASE}/api/teacher/submissions`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.submissions && data.submissions.length > 0) setSubmissionsList(data.submissions);
-          if (data.assignedSubjects && data.assignedSubjects.length > 0) setAssignedSubjects(data.assignedSubjects);
-          if (data.students && data.students.length > 0) setStudentsList(data.students);
+        const resSub = await fetch('http://localhost:5000/api/teacher/submissions');
+        if (resSub.ok) {
+          const data = await resSub.json();
+          setSubmissionsList(data);
+        }
+        const resAssign = await fetch('http://localhost:5000/api/teacher/assignments');
+        if (resAssign.ok) {
+          const data = await resAssign.json();
+          setAssignedSubjects(data.map(item => ({
+            code: item.subjectCode,
+            name: item.subjectName,
+            program: item.course,
+            semester: item.semester,
+            students: 62,
+            status: 'Pending'
+          })));
         }
       } catch (err) {
-        console.log('API Fetch fallback active:', err.message);
+        console.log('Error fetching DB records:', err.message);
       } finally {
         setLoading(false);
       }

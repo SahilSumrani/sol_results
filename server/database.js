@@ -31,7 +31,36 @@ async function initMySQLSchema(pool) {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
-    // 2. Mark Submissions Table
+    // 2. Subjects & Courses
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS subjects (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        code VARCHAR(100) UNIQUE NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        course VARCHAR(255) NOT NULL,
+        semester VARCHAR(50) NOT NULL,
+        maxMarks INT NOT NULL DEFAULT 40,
+        assessmentType VARCHAR(100) NOT NULL DEFAULT 'Practical'
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // 3. Teacher Assignments
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS teacher_assignments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        teacherId INT NOT NULL,
+        teacherEmail VARCHAR(255) NOT NULL,
+        teacherName VARCHAR(255) NOT NULL,
+        subjectCode VARCHAR(100) NOT NULL,
+        subjectName VARCHAR(255) NOT NULL,
+        course VARCHAR(255) NOT NULL,
+        semester VARCHAR(50) NOT NULL,
+        section VARCHAR(20) NOT NULL DEFAULT 'A',
+        assignedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // 4. Mark Submissions Table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS mark_submissions (
         id VARCHAR(100) PRIMARY KEY,
@@ -39,9 +68,11 @@ async function initMySQLSchema(pool) {
         subjectName VARCHAR(255) NOT NULL,
         course VARCHAR(255) NOT NULL,
         semester VARCHAR(50) NOT NULL,
+        section VARCHAR(20) DEFAULT 'A',
         examType VARCHAR(100) NOT NULL,
+        maxMarks INT DEFAULT 40,
         totalStudents INT NOT NULL,
-        status VARCHAR(50) DEFAULT 'SUBMITTED',
+        status VARCHAR(50) DEFAULT 'UNDER REVIEW',
         teacherEmail VARCHAR(255) NOT NULL,
         teacherName VARCHAR(255) NOT NULL,
         rejectionReason TEXT,
@@ -50,7 +81,7 @@ async function initMySQLSchema(pool) {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
-    // 3. Marks Table
+    // 5. Marks Table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS marks (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -59,25 +90,26 @@ async function initMySQLSchema(pool) {
         studentName VARCHAR(255) NOT NULL,
         paperCode VARCHAR(100) NOT NULL,
         paperName VARCHAR(255) NOT NULL,
-        paperType VARCHAR(50) NOT NULL,
+        paperType VARCHAR(50) NOT NULL DEFAULT 'DSC',
         sem VARCHAR(50) NOT NULL,
-        credit INT NOT NULL,
+        credit INT NOT NULL DEFAULT 4,
         thObt INT DEFAULT 0,
         thMax INT DEFAULT 75,
         tuObt INT DEFAULT 0,
         tuMax INT DEFAULT 25,
         prObt INT DEFAULT 0,
-        prMax INT DEFAULT 0,
-        netGrade VARCHAR(10) NOT NULL,
-        gradePoint INT NOT NULL,
-        creditPoint INT NOT NULL,
-        status VARCHAR(50) DEFAULT 'SUBMITTED',
+        prMax INT DEFAULT 40,
+        totalObt INT DEFAULT 0,
+        netGrade VARCHAR(10) NOT NULL DEFAULT 'A',
+        gradePoint INT NOT NULL DEFAULT 8,
+        creditPoint INT NOT NULL DEFAULT 32,
+        status VARCHAR(50) DEFAULT 'UNDER REVIEW',
         uploadedBy VARCHAR(255) NOT NULL,
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
-    // 4. Marks Audit Table
+    // 6. Marks Audit Table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS marks_audit (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -94,6 +126,21 @@ async function initMySQLSchema(pool) {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
+    // 7. Re-Evaluations Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS re_evaluations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        queryId VARCHAR(100) NOT NULL,
+        rollNo VARCHAR(100) NOT NULL,
+        studentName VARCHAR(255) NOT NULL,
+        subjectName VARCHAR(255) NOT NULL,
+        currentGrade VARCHAR(20) DEFAULT 'B+',
+        requestedReview TEXT NOT NULL,
+        status VARCHAR(50) DEFAULT 'PENDING',
+        requestedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
     // Seed default users if empty
     const [rows] = await pool.query("SELECT COUNT(*) as count FROM users");
     if (rows && rows[0] && rows[0].count === 0) {
@@ -101,10 +148,20 @@ async function initMySQLSchema(pool) {
         INSERT INTO users (name, email, password, role, rollNo, course, department) 
         VALUES 
         ('System Admin', 'admin@sol.du.ac.in', 'admin123', 'ADMIN', NULL, NULL, 'Examination Branch'),
-        ('Dr. Rahul Sharma', 'teacher@sol.du.ac.in', 'teacher123', 'TEACHER', NULL, NULL, 'Computer Science'),
-        ('Sahil Sumrani', 'student@sol.du.ac.in', 'student123', 'STUDENT', '23345227188', '(NEP) B.A. (PROGRAMME)', 'School of Open Learning');
+        ('Dr. Rahul Sharma', 'teacher@sol.du.ac.in', 'teacher123', 'TEACHER', NULL, 'B.Tech CSE', 'Computer Science & Engineering'),
+        ('Sahil Sumrani', 'student@sol.du.ac.in', 'student123', 'STUDENT', '240101', 'B.Tech CSE', 'School of Open Learning');
       `);
-      console.log("MySQL default users seeded successfully.");
+
+      await pool.query(`
+        INSERT INTO subjects (code, name, course, semester, maxMarks, assessmentType)
+        VALUES ('CS401L', 'Artificial Intelligence Lab', 'B.Tech CSE', 'VIII', 40, 'Practical');
+      `);
+
+      await pool.query(`
+        INSERT INTO teacher_assignments (teacherId, teacherEmail, teacherName, subjectCode, subjectName, course, semester, section)
+        VALUES (2, 'teacher@sol.du.ac.in', 'Dr. Rahul Sharma', 'CS401L', 'Artificial Intelligence Lab', 'B.Tech CSE', 'VIII', 'A');
+      `);
+      console.log("MySQL default ERP data seeded successfully.");
     }
 
     console.log("✓ Live MySQL Database Tables Auto-Created Successfully!");
@@ -151,15 +208,44 @@ sqliteDb.serialize(() => {
   `);
 
   sqliteDb.run(`
+    CREATE TABLE IF NOT EXISTS subjects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      code TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      course TEXT NOT NULL,
+      semester TEXT NOT NULL,
+      maxMarks INTEGER DEFAULT 40,
+      assessmentType TEXT DEFAULT 'Practical'
+    )
+  `);
+
+  sqliteDb.run(`
+    CREATE TABLE IF NOT EXISTS teacher_assignments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      teacherId INTEGER NOT NULL,
+      teacherEmail TEXT NOT NULL,
+      teacherName TEXT NOT NULL,
+      subjectCode TEXT NOT NULL,
+      subjectName TEXT NOT NULL,
+      course TEXT NOT NULL,
+      semester TEXT NOT NULL,
+      section TEXT DEFAULT 'A',
+      assignedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  sqliteDb.run(`
     CREATE TABLE IF NOT EXISTS mark_submissions (
       id TEXT PRIMARY KEY,
       subjectCode TEXT NOT NULL,
       subjectName TEXT NOT NULL,
       course TEXT NOT NULL,
       semester TEXT NOT NULL,
+      section TEXT DEFAULT 'A',
       examType TEXT NOT NULL,
+      maxMarks INTEGER DEFAULT 40,
       totalStudents INTEGER NOT NULL,
-      status TEXT DEFAULT 'SUBMITTED',
+      status TEXT DEFAULT 'UNDER REVIEW',
       teacherEmail TEXT NOT NULL,
       teacherName TEXT NOT NULL,
       rejectionReason TEXT,
@@ -184,11 +270,12 @@ sqliteDb.serialize(() => {
       tuObt INTEGER DEFAULT 0,
       tuMax INTEGER DEFAULT 25,
       prObt INTEGER DEFAULT 0,
-      prMax INTEGER DEFAULT 0,
+      prMax INTEGER DEFAULT 40,
+      totalObt INTEGER DEFAULT 0,
       netGrade TEXT NOT NULL,
       gradePoint INTEGER NOT NULL,
       creditPoint INTEGER NOT NULL,
-      status TEXT DEFAULT 'SUBMITTED',
+      status TEXT DEFAULT 'UNDER REVIEW',
       uploadedBy TEXT NOT NULL,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )
@@ -216,9 +303,12 @@ sqliteDb.serialize(() => {
     if (row && row.count === 0) {
       const stmt = sqliteDb.prepare("INSERT INTO users (name, email, password, role, rollNo, course, department) VALUES (?, ?, ?, ?, ?, ?, ?)");
       stmt.run("System Admin", "admin@sol.du.ac.in", "admin123", "ADMIN", null, null, "Examination Branch");
-      stmt.run("Dr. Rahul Sharma", "teacher@sol.du.ac.in", "teacher123", "TEACHER", null, null, "Computer Science");
-      stmt.run("Sahil Sumrani", "student@sol.du.ac.in", "student123", "STUDENT", "23345227188", "(NEP) B.A. (PROGRAMME)", "School of Open Learning");
+      stmt.run("Dr. Rahul Sharma", "teacher@sol.du.ac.in", "teacher123", "TEACHER", null, "B.Tech CSE", "Computer Science & Engineering");
+      stmt.run("Sahil Sumrani", "student@sol.du.ac.in", "student123", "STUDENT", "240101", "B.Tech CSE", "School of Open Learning");
       stmt.finalize();
+
+      sqliteDb.run("INSERT INTO subjects (code, name, course, semester, maxMarks, assessmentType) VALUES ('CS401L', 'Artificial Intelligence Lab', 'B.Tech CSE', 'VIII', 40, 'Practical')");
+      sqliteDb.run("INSERT INTO teacher_assignments (teacherId, teacherEmail, teacherName, subjectCode, subjectName, course, semester, section) VALUES (2, 'teacher@sol.du.ac.in', 'Dr. Rahul Sharma', 'CS401L', 'Artificial Intelligence Lab', 'B.Tech CSE', 'VIII', 'A')");
     }
   });
 });
@@ -228,3 +318,4 @@ module.exports = {
   dbPool,
   isMySQL
 };
+

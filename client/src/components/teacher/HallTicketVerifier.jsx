@@ -11,7 +11,7 @@ export const HallTicketVerifier = () => {
     if (!rollSearch) return;
     setSearching(true);
     try {
-      const API_BASE = import.meta.env.PROD ? 'https://sol-results.onrender.com' : '';
+      const API_BASE = 'http://localhost:5000';
       const res = await fetch(`${API_BASE}/api/marks/student/${rollSearch}`);
       if (res.ok) {
         const data = await res.json();

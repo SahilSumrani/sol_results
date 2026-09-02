@@ -28,26 +28,33 @@ export const FacultyEvaluationAudit = ({ facultyEvaluationProgress, onOpenExport
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 font-medium">
-            {facultyEvaluationProgress.map((f, idx) => {
-              const percent = Math.round((f.verified / f.checked) * 100);
-              return (
-                <tr key={idx} className="hover:bg-slate-50">
-                  <td className="p-3 font-bold text-slate-900">{f.name}</td>
-                  <td className="p-3 font-semibold text-slate-800">{f.subject}</td>
-                  <td className="p-3 text-center font-bold text-blue-700">{f.checked}</td>
-                  <td className="p-3 text-center font-bold text-emerald-700">{f.verified}</td>
-                  <td className="p-3 text-center font-bold text-amber-700">{f.pending}</td>
-                  <td className="p-3">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div className="bg-emerald-600 h-full rounded-full" style={{ width: `${percent}%` }}></div>
+            {facultyEvaluationProgress && facultyEvaluationProgress.length > 0 ? (
+              facultyEvaluationProgress.map((f, idx) => {
+                const checkedCount = f.checked || 1;
+                const percent = Math.round(((f.verified || 0) / checkedCount) * 100);
+                return (
+                  <tr key={idx} className="hover:bg-slate-50">
+                    <td className="p-3 font-bold text-slate-900">{f.name}</td>
+                    <td className="p-3 font-semibold text-slate-800">{f.subject}</td>
+                    <td className="p-3 text-center font-bold text-blue-700">{f.checked}</td>
+                    <td className="p-3 text-center font-bold text-emerald-700">{f.verified}</td>
+                    <td className="p-3 text-center font-bold text-amber-700">{f.pending}</td>
+                    <td className="p-3">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div className="bg-emerald-600 h-full rounded-full" style={{ width: `${percent}%` }}></div>
+                        </div>
+                        <span className="font-bold text-[11px] text-slate-700">{percent}%</span>
                       </div>
-                      <span className="font-bold text-[11px] text-slate-700">{percent}%</span>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan="6" className="p-6 text-center text-slate-500 font-medium">No faculty evaluation progress recorded yet in MySQL database.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
