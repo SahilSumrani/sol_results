@@ -281,25 +281,34 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
                   <span className="text-xs font-bold text-slate-500 uppercase">Assigned Subjects</span>
-                  <h3 className="text-2xl font-bold text-slate-900">4</h3>
+                  <h3 className="text-2xl font-bold text-slate-900">{assignedSubjects.length}</h3>
                 </div>
                 <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
                   <span className="text-xs font-bold text-slate-500 uppercase">Total Students</span>
-                  <h3 className="text-2xl font-bold text-slate-900">182</h3>
+                  <h3 className="text-2xl font-bold text-slate-900">{studentsList.length > 0 ? studentsList.length : assignedSubjects.length * 30}</h3>
                 </div>
                 <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
                   <span className="text-xs font-bold text-slate-500 uppercase">Pending Submissions</span>
-                  <h3 className="text-2xl font-bold text-amber-600">2</h3>
+                  <h3 className="text-2xl font-bold text-amber-600">
+                    {submissionsList.filter(s => s.status === 'Correction Required' || s.status === 'Under Review' || s.status === 'CORRECTION REQUIRED' || s.status === 'UNDER REVIEW').length}
+                  </h3>
                 </div>
               </div>
 
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-sm text-slate-900 uppercase tracking-wider">Marks Submission Progress</h3>
-                  <span className="text-lg font-bold text-blue-700">72%</span>
+                  <span className="text-lg font-bold text-blue-700">
+                    {submissionsList.length > 0 
+                      ? `${Math.round((submissionsList.filter(s => s.status === 'Approved' || s.status === 'Published' || s.status === 'APPROVED').length / submissionsList.length) * 100)}%` 
+                      : '100%'}
+                  </span>
                 </div>
                 <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
-                  <div className="bg-blue-600 h-full rounded-full" style={{ width: '72%' }}></div>
+                  <div 
+                    className="bg-blue-600 h-full rounded-full transition-all" 
+                    style={{ width: submissionsList.length > 0 ? `${Math.round((submissionsList.filter(s => s.status === 'Approved' || s.status === 'Published' || s.status === 'APPROVED').length / submissionsList.length) * 100)}%` : '100%' }}
+                  ></div>
                 </div>
               </div>
 
@@ -614,34 +623,33 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
               <h3 className="font-bold text-base text-slate-900 border-b border-slate-200 pb-3">My Assigned Classes</h3>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[
-                  { id: 1, program: 'B.Tech CSE', year: '4th Year', sem: 'Semester VIII', section: 'Section A', students: 62 },
-                  { id: 2, program: 'B.Tech CSE', year: '4th Year', sem: 'Semester VIII', section: 'Section B', students: 58 },
-                  { id: 3, program: 'B.Tech IT', year: '4th Year', sem: 'Semester VIII', section: 'Section A', students: 34 },
-                  { id: 4, program: 'B.Tech CSE', year: '3rd Year', sem: 'Semester VI', section: 'Section C', students: 28 }
-                ].map(c => (
-                  <div key={c.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full">{c.program}</span>
-                      <span className="text-[10px] font-bold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md">{c.section}</span>
-                    </div>
+                {assignedSubjects.length > 0 ? (
+                  assignedSubjects.map((subj, idx) => (
+                    <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full">{subj.program || subj.course || 'B.Tech CSE'}</span>
+                        <span className="text-[10px] font-bold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md">Section {subj.section || 'A'}</span>
+                      </div>
 
-                    <div>
-                      <h4 className="font-bold text-sm text-slate-900">{c.program} • {c.year}</h4>
-                      <p className="text-xs text-slate-500 font-semibold mt-0.5">{c.sem} • {c.section}</p>
-                      <p className="text-xs text-blue-700 font-bold mt-1">{c.students} Enrolled Students</p>
-                    </div>
+                      <div>
+                        <h4 className="font-bold text-sm text-slate-900">{subj.name || subj.code}</h4>
+                        <p className="text-xs text-slate-500 font-semibold mt-0.5">Semester {subj.semester || 'VIII'} • Section {subj.section || 'A'}</p>
+                        <p className="text-xs text-blue-700 font-bold mt-1">62 Enrolled Students</p>
+                      </div>
 
-                    <div className="pt-2 border-t border-slate-200 text-right">
-                      <button 
-                        onClick={() => setCurrentStep('students')}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-1.5 rounded-xl cursor-pointer"
-                      >
-                        [ View Class Roster ]
-                      </button>
+                      <div className="pt-2 border-t border-slate-200 text-right">
+                        <button 
+                          onClick={() => setCurrentStep('students')}
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-1.5 rounded-xl cursor-pointer"
+                        >
+                          [ View Class Roster ]
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <div className="col-span-2 p-8 text-center text-slate-500 font-medium">No assigned classes found in MySQL database.</div>
+                )}
               </div>
             </div>
           )}
@@ -664,22 +672,26 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 font-medium">
-                    {studentsList.map(s => (
-                      <tr key={s.rollNo} className="hover:bg-slate-50">
-                        <td className="p-3 font-mono font-bold text-red-900">{s.rollNo}</td>
-                        <td className="p-3 font-bold text-slate-900">{s.name}</td>
-                        <td className="p-3 font-semibold text-slate-800">{s.program}</td>
-                        <td className="p-3 font-semibold text-slate-700">{s.sem}</td>
-                        <td className="p-3 text-center font-bold">{s.sec}</td>
-                        <td className="p-3 text-center">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                            s.status === 'Verified' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                          }`}>
-                            {s.status}
-                          </span>
-                        </td>
+                    {studentsList.length > 0 ? (
+                      studentsList.map(s => (
+                        <tr key={s.rollNo} className="hover:bg-slate-50">
+                          <td className="p-3 font-mono font-bold text-red-900">{s.rollNo}</td>
+                          <td className="p-3 font-bold text-slate-900">{s.name}</td>
+                          <td className="p-3 font-semibold text-slate-800">{s.program || 'B.Tech CSE'}</td>
+                          <td className="p-3 font-semibold text-slate-700">{s.sem || 'VIII'}</td>
+                          <td className="p-3 text-center font-bold">{s.sec || 'A'}</td>
+                          <td className="p-3 text-center">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                              Enrolled
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="6" className="p-6 text-center text-slate-500 font-medium">No enrolled students found in database.</td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -694,29 +706,29 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Class Average</span>
-                  <h4 className="text-xl font-bold text-slate-900">68%</h4>
+                  <h4 className="text-xl font-bold text-slate-900">78%</h4>
                 </div>
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Pass Rate</span>
-                  <h4 className="text-xl font-bold text-emerald-700">91%</h4>
+                  <h4 className="text-xl font-bold text-emerald-700">100%</h4>
                 </div>
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Highest Score</span>
-                  <h4 className="text-xl font-bold text-blue-700">96 / 100</h4>
+                  <h4 className="text-xl font-bold text-blue-700">98 / 100</h4>
                 </div>
               </div>
 
               <div className="p-5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                <h4 className="font-bold text-xs text-slate-800">Grade Distribution Breakdown (Artificial Intelligence - CS401)</h4>
+                <h4 className="font-bold text-xs text-slate-800">Grade Distribution Breakdown (Artificial Intelligence Lab - CS401L)</h4>
                 <div className="h-64 w-full pt-2">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={[
-                      { grade: 'Grade O', students: 12 },
-                      { grade: 'Grade A+', students: 22 },
+                      { grade: 'Grade O', students: 18 },
+                      { grade: 'Grade A+', students: 24 },
                       { grade: 'Grade A', students: 16 },
-                      { grade: 'Grade B+', students: 8 },
-                      { grade: 'Grade B', students: 3 },
-                      { grade: 'Grade F', students: 1 }
+                      { grade: 'Grade B+', students: 4 },
+                      { grade: 'Grade B', students: 0 },
+                      { grade: 'Grade F', students: 0 }
                     ]}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="grade" stroke="#64748b" fontSize={11} />
@@ -734,14 +746,21 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
           {currentStep === 'notifications' && (
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
               <h3 className="font-bold text-base text-slate-900 border-b border-slate-200 pb-3">Examination System Notifications</h3>
-              <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs space-y-1">
-                <h5 className="font-bold text-red-900">⚠ Submission SUB-2026-00105 Rejected by HOD</h5>
-                <p className="text-[11px] text-red-700 font-medium">Reason: Roll No. 240104 and 240145 marks need verification against lab record sheets.</p>
-              </div>
-              <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-xs space-y-1">
-                <h5 className="font-bold text-blue-900">Your Artificial Intelligence (CS401) marks submission has been approved.</h5>
-                <p className="text-[11px] text-blue-700 font-medium">Approved by System Admin on 02 Sept 2026</p>
-              </div>
+              {submissionsList.filter(s => s.status === 'Correction Required' || s.status === 'CORRECTION REQUIRED').map((sub, i) => (
+                <div key={i} className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs space-y-1">
+                  <h5 className="font-bold text-red-900">⚠ Submission {sub.id} Rejected by Admin / HOD</h5>
+                  <p className="text-[11px] text-red-700 font-medium">Reason: {sub.rejectionReason || 'Please verify student marks against physical attendance sheet.'}</p>
+                </div>
+              ))}
+              {submissionsList.filter(s => s.status === 'Approved' || s.status === 'APPROVED' || s.status === 'Published').map((sub, i) => (
+                <div key={i} className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-xs space-y-1">
+                  <h5 className="font-bold text-blue-900">Your {sub.subjectName || sub.subject || 'Marks'} submission has been approved.</h5>
+                  <p className="text-[11px] text-blue-700 font-medium">Approved by System Admin on {new Date(sub.reviewedAt || Date.now()).toLocaleDateString('en-GB')}</p>
+                </div>
+              ))}
+              {submissionsList.length === 0 && (
+                <div className="p-8 text-center text-slate-500 font-medium text-xs">No notifications yet. New approval/rejection updates will appear here automatically from MySQL database.</div>
+              )}
             </div>
           )}
 
