@@ -24,6 +24,28 @@ router.get('/assignments', async (req, res, next) => {
   }
 });
 
+// 1.1 Fetch Enrolled Students for Teacher
+router.get('/students', async (req, res, next) => {
+  try {
+    const { course, semester } = req.query;
+    let sql = "SELECT rollNo, name, course as program, semester as sem, section as sec, department FROM users WHERE role = 'STUDENT'";
+    const params = [];
+    if (course) {
+      sql += " AND course = ?";
+      params.push(course);
+    }
+    if (semester) {
+      sql += " AND semester = ?";
+      params.push(semester);
+    }
+    sql += " ORDER BY rollNo ASC";
+    const rows = await query(sql, params);
+    res.json(rows);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // 2. Fetch Teacher Submissions (uses verified req.user.id)
 router.get('/submissions', async (req, res, next) => {
   const page = parseInt(req.query.page || '1', 10);

@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  LayoutDashboard, BookOpen, Users, Upload, FileCheck, Clock, 
+import {
+  LayoutDashboard, BookOpen, Users, Upload, FileCheck, Clock,
   Bell, FileText, User, LogOut, CheckCircle, Search, FileSpreadsheet, Download, ShieldAlert, History
 } from 'lucide-react';
-import { 
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid 
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from 'recharts';
 import { SubmissionsLogTable } from './SubmissionsLogTable';
 import { AuditAndPdfModals } from './AuditAndPdfModals';
 import { usePortal } from '../../context/PortalContext';
-import { apiFetch } from '../../services/apiClient';
+import { apiFetch, API_BASE } from '../../services/apiClient';
 
 export const ProductionTeacherDashboard = ({ onLogout }) => {
   // Navigation Flow States: 'dashboard' | 'subjects' | 'select_exam' | 'upload_method' | 'excel_upload' | 'manual_entry' | 'validation' | 'preview_marks' | 'submission_success' | 'submissions_log' | 'classes' | 'students' | 'reports' | 'notifications'
   const [currentStep, setCurrentStep] = useState('dashboard');
-  
+
   // Active Selected Examination Context
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [academicYear, setAcademicYear] = useState('2026–27');
@@ -72,13 +72,31 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
         const resAssign = await apiFetch('/api/teacher/assignments');
         if (resAssign.ok) {
           const data = await resAssign.json();
-          setAssignedSubjects(data.map(item => ({
+          const mapped = data.map(item => ({
             code: item.subjectCode,
             name: item.subjectName,
             program: item.course,
             semester: item.semester,
+            section: item.section || 'A',
             students: item.studentCount || 60,
             status: item.status || 'Pending'
+          }));
+          setAssignedSubjects(mapped);
+          if (mapped.length > 0 && !selectedSubject) {
+            setSelectedSubject(mapped[0]);
+          }
+        }
+        const resStudents = await apiFetch('/api/teacher/students');
+        if (resStudents.ok) {
+          const stdData = await resStudents.json();
+          setStudentsList(stdData);
+          setPreviewRows(stdData.map(s => ({
+            rollNo: s.rollNo,
+            name: s.name,
+            internal: 22,
+            practical: 65,
+            total: 87,
+            marks: 87
           })));
         }
       } catch (err) {
@@ -111,18 +129,20 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
 
   const handleFinalSubmitConfirm = async () => {
     const newSubId = `SUB-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+    const subj = selectedSubject || assignedSubjects[0];
+    if (!subj) return alert('No subject assigned or selected.');
     try {
       const res = await apiFetch('/api/teacher/marks/submit', {
         method: 'POST',
         body: JSON.stringify({
           submissionId: newSubId,
-          subjectCode: selectedSubject.code,
-          subjectName: selectedSubject.name,
-          course: selectedSubject.program || selectedSubject.course || 'B.Tech CSE',
-          semester: selectedSubject.semester || 'VIII',
-          section: selectedSubject.section || 'A',
-          examType: examType || 'Practical',
-          maxMarks: maxMarks || 40,
+          subjectCode: subj.code,
+          subjectName: subj.name,
+          course: subj.program || subj.course || 'B.Tech CSE',
+          semester: subj.semester || '3',
+          section: subj.section || 'A',
+          examType: examType || 'Internal Assessment',
+          maxMarks: 100,
           marksData: previewRows.map(r => ({
             rollNo: r.rollNo,
             name: r.name,
@@ -136,20 +156,20 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
         const json = await res.json();
         const finalId = json.submissionId || newSubId;
         setLastSubmissionId(finalId);
-        
+
         setSubmissionsList(prev => [
-          { 
-            id: finalId, 
-            subjectName: selectedSubject.name, 
-            subjectCode: selectedSubject.code, 
-            course: selectedSubject.program || selectedSubject.course || 'B.Tech CSE', 
+          {
+            id: finalId,
+            subjectName: selectedSubject.name,
+            subjectCode: selectedSubject.code,
+            course: selectedSubject.program || selectedSubject.course || 'B.Tech CSE',
             semester: selectedSubject.semester || 'VIII',
             section: selectedSubject.section || 'A',
-            examType, 
-            totalStudents: previewRows.length, 
-            status: 'UNDER_REVIEW', 
+            examType,
+            totalStudents: previewRows.length,
+            status: 'UNDER_REVIEW',
             submittedAt: new Date().toISOString(),
-            rejectionReason: null 
+            rejectionReason: null
           },
           ...prev
         ]);
@@ -196,14 +216,15 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
   };
 
   const handleDownloadDynamicTemplate = () => {
-    if (!selectedSubject) return alert('Please select a subject first.');
-    const baseUrl = typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:5000';
-    window.location.href = `${baseUrl}/api/teacher/template/download?subjectCode=${selectedSubject.code}&subjectName=${selectedSubject.name}`;
+    const code = selectedSubject?.code || assignedSubjects[0]?.code;
+    const name = selectedSubject?.name || assignedSubjects[0]?.name;
+    if (!code) return alert('Please select a subject first.');
+    window.open(`${API_BASE}/api/teacher/template/download?subjectCode=${code}&subjectName=${encodeURIComponent(name || '')}`, '_blank');
   };
 
   return (
     <div className="w-full min-h-screen bg-slate-50 flex text-slate-800 font-sans antialiased">
-      
+
       {/* 1. SIDEBAR NAVIGATION */}
       <aside className="w-72 bg-slate-900 text-slate-300 flex flex-col justify-between shrink-0 hidden md:flex border-r border-slate-800 min-h-screen sticky top-0 h-screen">
         <div className="p-6 space-y-6">
@@ -219,7 +240,7 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
 
           <nav className="space-y-1 text-xs font-medium">
             <p className="px-3 text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-2">Portal Navigation</p>
-            
+
             {[
               { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
               { id: 'subjects', label: 'My Subjects', icon: BookOpen },
@@ -232,8 +253,8 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
             ].map(item => {
               const Icon = item.icon;
               // Derive active sidebar state strictly from current flow step
-              const isActive = 
-                currentStep === item.id || 
+              const isActive =
+                currentStep === item.id ||
                 (item.id === 'upload_method' && ['select_exam', 'excel_upload', 'manual_entry', 'validation', 'preview_marks', 'submission_success'].includes(currentStep)) ||
                 (item.id === 'subjects' && currentStep === 'subjects');
 
@@ -241,11 +262,10 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
                 <button
                   key={item.id}
                   onClick={() => setCurrentStep(item.id)}
-                  className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer ${
-                    isActive 
-                      ? 'bg-blue-600 text-white font-bold shadow-sm' 
+                  className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer ${isActive
+                      ? 'bg-blue-600 text-white font-bold shadow-sm'
                       : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <Icon className="w-4 h-4" />
                   <span>{item.label}</span>
@@ -273,7 +293,7 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
 
       {/* 2. MAIN BODY CONTENT */}
       <div className="flex-1 flex flex-col min-w-0">
-        
+
         {/* TOP NAVBAR */}
         <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center space-x-3 text-xs">
@@ -299,7 +319,7 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
 
         {/* MAIN CONTAINER */}
         <main className="p-8 space-y-6 flex-1 overflow-y-auto max-w-6xl">
-          
+
           {/* REJECTION ALERT BANNER */}
           {submissionsList.some(s => s.status === 'CORRECTION_REQUIRED' || s.status === 'Correction Required') && (
             (() => {
@@ -313,7 +333,7 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
                       <p className="text-[11px] text-red-700 font-medium">Reason: {reqSub?.rejectionReason || 'Marks require verification by teacher.'}</p>
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={() => handleOpenCorrection(reqSub)}
                     className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2 rounded-xl cursor-pointer shadow-xs shrink-0"
                   >
@@ -340,8 +360,8 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
                 <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
                   <span className="text-xs font-bold text-slate-500 uppercase">Total Students</span>
                   <h3 className="text-2xl font-bold text-slate-900">
-                    {studentsList.length > 0 
-                      ? studentsList.length 
+                    {studentsList.length > 0
+                      ? studentsList.length
                       : assignedSubjects.reduce((acc, curr) => acc + (curr.students || 0), 0)}
                   </h3>
                 </div>
@@ -357,14 +377,14 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-sm text-slate-900 uppercase tracking-wider">Marks Submission Progress</h3>
                   <span className="text-lg font-bold text-blue-700">
-                    {submissionsList.length > 0 
-                      ? `${Math.round((submissionsList.filter(s => s.status === 'Approved' || s.status === 'Published' || s.status === 'APPROVED' || s.status === 'PUBLISHED').length / submissionsList.length) * 100)}%` 
+                    {submissionsList.length > 0
+                      ? `${Math.round((submissionsList.filter(s => s.status === 'Approved' || s.status === 'Published' || s.status === 'APPROVED' || s.status === 'PUBLISHED').length / submissionsList.length) * 100)}%`
                       : '0%'}
                   </span>
                 </div>
                 <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
-                  <div 
-                    className="bg-blue-600 h-full rounded-full transition-all" 
+                  <div
+                    className="bg-blue-600 h-full rounded-full transition-all"
                     style={{ width: submissionsList.length > 0 ? `${Math.round((submissionsList.filter(s => s.status === 'Approved' || s.status === 'Published' || s.status === 'APPROVED' || s.status === 'PUBLISHED').length / submissionsList.length) * 100)}%` : '0%' }}
                   ></div>
                 </div>
@@ -374,28 +394,28 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
                 <h4 className="font-bold text-xs text-slate-500 uppercase tracking-wider">Quick Actions</h4>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-bold">
-                  <button 
+                  <button
                     onClick={() => setCurrentStep('upload_method')}
                     className="p-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl border border-blue-200 flex items-center justify-center space-x-2 transition-all cursor-pointer"
                   >
                     <Upload className="w-4 h-4" />
                     <span>Upload Marks</span>
                   </button>
-                  <button 
+                  <button
                     onClick={() => setCurrentStep('preview_marks')}
                     className="p-3 bg-slate-50 hover:bg-slate-100 text-slate-800 rounded-xl border border-slate-200 flex items-center justify-center space-x-2 transition-all cursor-pointer"
                   >
                     <Clock className="w-4 h-4 text-amber-600" />
                     <span>Continue Draft</span>
                   </button>
-                  <button 
+                  <button
                     onClick={() => setCurrentStep('submissions_log')}
                     className="p-3 bg-slate-50 hover:bg-slate-100 text-slate-800 rounded-xl border border-slate-200 flex items-center justify-center space-x-2 transition-all cursor-pointer"
                   >
                     <ShieldAlert className="w-4 h-4 text-red-600" />
                     <span>View Pending</span>
                   </button>
-                  <button 
+                  <button
                     onClick={handleDownloadDynamicTemplate}
                     className="p-3 bg-slate-50 hover:bg-slate-100 text-slate-800 rounded-xl border border-slate-200 flex items-center justify-center space-x-2 transition-all cursor-pointer"
                   >
@@ -417,15 +437,14 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
           {(currentStep === 'subjects' || currentStep === 'dashboard') && (
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-5">
               <h3 className="font-bold text-base text-slate-900 border-b border-slate-200 pb-3">Assigned Subjects</h3>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {assignedSubjects.map(sub => (
                   <div key={sub.code} className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded">{sub.code}</span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        sub.status === 'Submitted' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                      }`}>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${sub.status === 'Submitted' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                        }`}>
                         {sub.status === 'Pending' ? '⚠ Pending' : '✓ Submitted'}
                       </span>
                     </div>
@@ -438,14 +457,14 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
 
                     <div className="pt-2 border-t border-slate-200 text-right">
                       {sub.status === 'Pending' ? (
-                        <button 
+                        <button
                           onClick={() => handleSelectSubject(sub)}
                           className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 rounded-xl cursor-pointer shadow-2xs"
                         >
                           [ Upload Marks ]
                         </button>
                       ) : (
-                        <button 
+                        <button
                           onClick={() => setCurrentStep('submissions_log')}
                           className="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs px-4 py-2 rounded-xl cursor-pointer"
                         >
@@ -507,9 +526,9 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
           {currentStep === 'upload_method' && (
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-6 text-center">
               <h3 className="font-bold text-base text-slate-900">Select Mark Entry Method</h3>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mx-auto">
-                <button 
+                <button
                   onClick={() => { setEntryMethod('excel'); setCurrentStep('excel_upload'); }}
                   className="p-6 bg-slate-50 hover:bg-blue-50 border-2 border-slate-200 hover:border-blue-500 rounded-2xl transition-all cursor-pointer text-center space-y-2"
                 >
@@ -518,7 +537,7 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
                   <p className="text-xs text-slate-500 font-medium">Batch upload via .xlsx / .csv</p>
                 </button>
 
-                <button 
+                <button
                   onClick={() => { setEntryMethod('manual'); setCurrentStep('preview_marks'); }}
                   className="p-6 bg-slate-50 hover:bg-blue-50 border-2 border-slate-200 hover:border-blue-500 rounded-2xl transition-all cursor-pointer text-center space-y-2"
                 >
@@ -535,7 +554,7 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-5">
               <div className="flex items-center justify-between border-b border-slate-200 pb-3">
                 <h3 className="font-bold text-base text-slate-900">Drag & Drop Excel File</h3>
-                <button 
+                <button
                   onClick={handleDownloadDynamicTemplate}
                   className="flex items-center space-x-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs px-3.5 py-2 rounded-xl transition-all border border-blue-200 cursor-pointer"
                 >
@@ -543,8 +562,8 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
                   <span>Download Dynamic Excel Template (.xlsx)</span>
                 </button>
               </div>
-              
-              <div 
+
+              <div
                 onClick={() => setCurrentStep('validation')}
                 className="border-2 border-dashed border-slate-300 hover:border-blue-500 bg-slate-50/60 rounded-2xl p-10 text-center space-y-3 cursor-pointer"
               >
@@ -585,7 +604,7 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-200 pb-3">
                 <h3 className="font-bold text-base text-slate-900">Review & Edit Marks</h3>
-                <span className="text-xs font-semibold text-slate-500">Subject: {selectedSubject.name}</span>
+                <span className="text-xs font-semibold text-slate-500">Subject: {selectedSubject?.name || 'Selected Subject'}</span>
               </div>
 
               <div className="overflow-x-auto rounded-xl border border-slate-200 text-xs">
@@ -606,19 +625,19 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
                         <td className="p-3 font-mono font-bold text-red-900">{row.rollNo}</td>
                         <td className="p-3 font-bold text-slate-900">{row.name}</td>
                         <td className="p-3 text-center">
-                          <input 
-                            type="number" 
-                            value={row.internal} 
+                          <input
+                            type="number"
+                            value={row.internal}
                             onChange={(e) => handleInlineMarkChange(row.rollNo, 'internal', e.target.value)}
-                            className="w-16 border border-slate-300 rounded p-1 text-center font-bold text-blue-900 outline-none" 
+                            className="w-16 border border-slate-300 rounded p-1 text-center font-bold text-blue-900 outline-none"
                           />
                         </td>
                         <td className="p-3 text-center">
-                          <input 
-                            type="number" 
-                            value={row.practical} 
+                          <input
+                            type="number"
+                            value={row.practical}
                             onChange={(e) => handleInlineMarkChange(row.rollNo, 'practical', e.target.value)}
-                            className="w-16 border border-slate-300 rounded p-1 text-center font-bold text-blue-900 outline-none" 
+                            className="w-16 border border-slate-300 rounded p-1 text-center font-bold text-blue-900 outline-none"
                           />
                         </td>
                         <td className="p-3 text-center font-bold text-slate-900">{row.total}</td>
@@ -668,7 +687,7 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
 
           {/* SUBMISSIONS LOG TAB */}
           {currentStep === 'submissions_log' && (
-            <SubmissionsLogTable 
+            <SubmissionsLogTable
               submissionsList={submissionsList}
               handleOpenCorrection={handleOpenCorrection}
               setPdfPreviewModalOpen={setPdfPreviewModalOpen}
@@ -679,7 +698,7 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
           {currentStep === 'classes' && (
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-5">
               <h3 className="font-bold text-base text-slate-900 border-b border-slate-200 pb-3">My Assigned Classes</h3>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {assignedSubjects.length > 0 ? (
                   assignedSubjects.map((subj, idx) => (
@@ -696,7 +715,7 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
                       </div>
 
                       <div className="pt-2 border-t border-slate-200 text-right">
-                        <button 
+                        <button
                           onClick={() => setCurrentStep('students')}
                           className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-1.5 rounded-xl cursor-pointer"
                         >
@@ -716,7 +735,7 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
           {currentStep === 'students' && (
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
               <h3 className="font-bold text-base text-slate-900 border-b border-slate-200 pb-3">Enrolled Students List</h3>
-              
+
               <div className="overflow-x-auto rounded-xl border border-slate-200 text-xs">
                 <table className="w-full text-left border-collapse">
                   <thead className="bg-slate-50 font-bold text-slate-600 uppercase border-b border-slate-200">
@@ -760,7 +779,7 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
           {currentStep === 'reports' && (
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-6">
               <h3 className="font-bold text-base text-slate-900 border-b border-slate-200 pb-3">Examination Reports & Performance Charts</h3>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Class Average</span>
@@ -845,7 +864,7 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-300 shadow-2xl w-full max-w-md p-6 space-y-4 font-sans">
             <h3 className="font-bold text-base text-slate-900 border-b border-slate-200 pb-2">Confirm Submission?</h3>
-            <p className="text-xs text-slate-600 font-medium">You are about to submit marks for {selectedSubject.name} ({selectedSubject.code}).</p>
+            <p className="text-xs text-slate-600 font-medium">You are about to submit marks for {selectedSubject?.name || 'Selected Subject'} ({selectedSubject?.code || '-'}).</p>
 
             <label className="flex items-center space-x-2 text-xs font-semibold text-slate-800 cursor-pointer pt-2">
               <input type="checkbox" checked={isConfirmed} onChange={(e) => setIsConfirmed(e.target.checked)} className="rounded" />
@@ -854,7 +873,7 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
 
             <div className="flex justify-end space-x-3 pt-3 border-t border-slate-200">
               <button onClick={() => setConfirmationModalOpen(false)} className="px-4 py-2 bg-slate-100 text-xs font-bold text-slate-700 rounded-xl">Cancel</button>
-              <button 
+              <button
                 disabled={!isConfirmed}
                 onClick={handleFinalSubmitConfirm}
                 className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-2xs cursor-pointer"
@@ -888,7 +907,7 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Reason for Correction (Recorded in Audit Trail):</label>
-                <textarea 
+                <textarea
                   value={correctionReason}
                   onChange={(e) => setCorrectionReason(e.target.value)}
                   rows={2}
@@ -899,7 +918,7 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
 
             <div className="flex justify-end space-x-3 pt-3 border-t border-slate-200">
               <button onClick={() => setCorrectionModalOpen(false)} className="px-4 py-2 bg-slate-100 text-xs font-bold text-slate-700 rounded-xl">Cancel</button>
-              <button 
+              <button
                 onClick={handleResubmitCorrection}
                 className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-2xs cursor-pointer"
               >
@@ -911,7 +930,7 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
       )}
 
       {/* AUDIT & PDF MODALS */}
-      <AuditAndPdfModals 
+      <AuditAndPdfModals
         auditLogModalOpen={auditLogModalOpen}
         setAuditLogModalOpen={setAuditLogModalOpen}
         auditLogs={auditLogs}
