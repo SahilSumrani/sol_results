@@ -1,17 +1,27 @@
 const express = require('express');
 const { query } = require('../db');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, JWT_SECRET } = require('../middleware/auth');
+const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 
-router.use(authenticateToken);
+function optionalAuth(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return next();
 
-// 1. Student fetches published marks for their roll number
-router.get('/student/:rollNo', async (req, res, next) => {
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (!err) req.user = user;
+    next();
+  });
+}
+
+// 1. Student fetches published marks for their roll number (supports public result portal and authenticated students)
+router.get('/student/:rollNo', optionalAuth, async (req, res, next) => {
   const rollNo = req.params.rollNo;
 
-  // IDOR Check: A student token MUST carry a valid rollNo. Falsy rollNo or mismatch is strictly rejected with 403.
-  if (req.user.role === 'STUDENT') {
+  // IDOR Check: When a student token is present, rollNo MUST match the requested rollNo.
+  if (req.user && req.user.role === 'STUDENT') {
     if (!req.user.rollNo || req.user.rollNo !== rollNo) {
       return res.status(403).json({ error: 'Forbidden: You can only view your own published marks' });
     }
@@ -29,7 +39,7 @@ router.get('/student/:rollNo', async (req, res, next) => {
     const total = Number(totalRows[0]?.count || 0);
 
     const rows = await query(
-      `SELECT m.*, u.course as userCourse, u.department, u.fatherName, u.motherName, u.enrollmentNo
+      `SELECT m.*, u.course as userCourse, u.department, u.fatherName, u.motherName, u.enrollmentNo, u.name as userName
        FROM marks m
        LEFT JOIN users u ON m.rollNo = u.rollNo
        WHERE m.rollNo = ? AND m.status = 'PUBLISHED'
@@ -37,10 +47,10 @@ router.get('/student/:rollNo', async (req, res, next) => {
       [rollNo, limit, offset]
     );
 
-    // If teacher/admin is searching and no published marks exist yet, provide enrolled student profile info
-    if (rows.length === 0 && (req.user.role === 'TEACHER' || req.user.role === 'ADMIN')) {
+    // If no published marks exist yet, provide enrolled student profile info from users table
+    if (rows.length === 0) {
       const studentUser = await query(
-        "SELECT rollNo, name as studentName, course, department, semester as sem FROM users WHERE rollNo = ? AND role = 'STUDENT'",
+        "SELECT rollNo, name as studentName, course, department, semester as sem, fatherName, motherName, enrollmentNo FROM users WHERE rollNo = ? AND role = 'STUDENT'",
         [rollNo]
       );
       if (studentUser && studentUser.length > 0) {
@@ -59,6 +69,9 @@ router.get('/student/:rollNo', async (req, res, next) => {
     next(err);
   }
 });
+
+// Require strict authentication for audit trails and re-evaluation queries
+router.use(authenticateToken);
 
 // 2. Audit Trail Authorization (ADMIN=all, TEACHER=own submissions, STUDENT=own rollNo)
 router.get('/audit/:submissionId', async (req, res, next) => {

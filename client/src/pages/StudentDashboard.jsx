@@ -57,37 +57,44 @@ export const StudentDashboard = () => {
   const studentRollNo = rollNo || '';
   const activeMarksSource = dbMarks || [];
 
-  // Dynamic Paper List constructed from database marks
-  const paperList = activeMarksSource.map((m, idx) => ({
-    sr: idx + 1,
-    code: m.paperCode,
-    name: m.paperName,
-    type: m.paperType || 'DSC',
-    sem: m.sem,
-    credit: m.credit || 4,
-    th: m.thObt > 0 ? (m.thGrade || 'A') : '-',
-    tu: m.tuObt > 0 ? (m.tuGrade || 'A') : '-',
-    pr: m.prObt > 0 ? (m.prGrade || 'A') : '-',
-    net: m.netGrade || 'A',
-    point: m.gradePoint || 8,
-    creditPoint: m.creditPoint || 32
-  }));
+  // Dynamic Paper List constructed strictly from database marks
+  const paperList = activeMarksSource
+    .filter(m => m.paperCode || m.paperName)
+    .map((m, idx) => ({
+      sr: idx + 1,
+      code: m.paperCode || '-',
+      name: m.paperName || '-',
+      type: m.paperType || 'DSC',
+      sem: m.sem || '-',
+      credit: m.credit ?? '-',
+      th: m.thGrade || (m.thObt !== null && m.thObt !== undefined ? String(m.thObt) : '-'),
+      tu: m.tuGrade || (m.tuObt !== null && m.tuObt !== undefined ? String(m.tuObt) : '-'),
+      pr: m.prGrade || (m.prObt !== null && m.prObt !== undefined ? String(m.prObt) : '-'),
+      net: m.netGrade || '-',
+      point: m.gradePoint ?? '-',
+      creditPoint: m.creditPoint ?? '-'
+    }));
 
   // Real-time automatic SGPA / CGPA Calculation Engine from Database Records
   const calculateSgpaTable = () => {
-    if (!activeMarksSource || activeMarksSource.length === 0) {
+    const marksWithGrades = activeMarksSource.filter(m => m.paperCode && m.netGrade);
+    if (marksWithGrades.length === 0) {
       return [];
     }
 
     // Group active marks by semester
     const semMap = {};
-    activeMarksSource.forEach(m => {
+    marksWithGrades.forEach(m => {
       const s = m.sem || 'I';
-      if (!semMap[s]) semMap[s] = { credit: 0, creditPoint: 0 };
-      const cr = Number(m.credit || 4);
-      const cp = Number(m.creditPoint || (cr * (m.gradePoint || 8)));
+      if (!semMap[s]) semMap[s] = { credit: 0, creditPoint: 0, hasFailed: false };
+      const cr = Number(m.credit || 0);
+      const gp = Number(m.gradePoint) || 0;
+      const cp = Number(m.creditPoint != null ? m.creditPoint : (cr * gp));
       semMap[s].credit += cr;
       semMap[s].creditPoint += cp;
+      if (m.netGrade === 'F' || gp === 0) {
+        semMap[s].hasFailed = true;
+      }
     });
 
     let cumulativeCredit = 0;
@@ -95,17 +102,17 @@ export const StudentDashboard = () => {
 
     return Object.keys(semMap).map(s => {
       const semData = semMap[s];
-      const sgpaVal = (semData.creditPoint / (semData.credit || 1)).toFixed(2);
+      const sgpaVal = semData.credit > 0 ? (semData.creditPoint / semData.credit).toFixed(2) : '-';
       cumulativeCredit += semData.credit;
       cumulativePoint += semData.creditPoint;
-      const cgpaVal = (cumulativePoint / (cumulativeCredit || 1)).toFixed(2);
+      const cgpaVal = cumulativeCredit > 0 ? (cumulativePoint / cumulativeCredit).toFixed(2) : '-';
       
       return {
         sem: s,
-        credit: semData.credit,
-        point: semData.creditPoint,
+        credit: semData.credit || '-',
+        point: semData.creditPoint || '-',
         sgpa: sgpaVal,
-        result: 'PASSED',
+        result: semData.hasFailed ? 'ER' : 'PASSED',
         cgpa: cgpaVal
       };
     });
@@ -157,7 +164,7 @@ export const StudentDashboard = () => {
                           className="h-24 w-auto object-contain ml-auto"
                         />
                         <span className="text-[11px] font-mono text-maroon-800 font-bold block mt-1" style={{ color: '#800000' }}>
-                          DVFNO: {studentRollNo ? `${studentRollNo.slice(-6)}833` : '-'}
+                          DVFNO: {dbMarks[0]?.submissionId ? `DVF-${dbMarks[0].submissionId.slice(-8).toUpperCase()}` : '-'}
                         </span>
                       </div>
                     </td>
@@ -188,31 +195,31 @@ export const StudentDashboard = () => {
                 <tbody>
                   <tr>
                     <td className="w-[20%] py-1 font-semibold text-slate-700">Exam Roll No.</td>
-                    <td className="py-1"><strong className="text-slate-900" style={{ color: '#800000', fontWeight: 'bold' }}>: {studentRollNo}</strong></td>
+                    <td className="py-1"><strong className="text-slate-900" style={{ color: '#800000', fontWeight: 'bold' }}>: {studentRollNo || '-'}</strong></td>
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">Name</td>
-                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.name || (dbMarks[0]?.studentName) || '-'}</span></td>
+                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.name || dbMarks[0]?.studentName || dbMarks[0]?.userName || '-'}</span></td>
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">Father's Name</td>
-                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.fatherName || '-'}</span></td>
+                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.fatherName || dbMarks[0]?.fatherName || '-'}</span></td>
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">Mother's Name</td>
-                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.motherName || '-'}</span></td>
+                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.motherName || dbMarks[0]?.motherName || '-'}</span></td>
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">Enrollment No.</td>
-                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.enrollmentNo || (studentRollNo ? `23SOL${studentRollNo}` : '-')}</span></td>
+                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.enrollmentNo || dbMarks[0]?.enrollmentNo || '-'}</span></td>
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">Course Name</td>
-                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.course || (dbMarks[0]?.course) || '-'}</span></td>
+                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.course || dbMarks[0]?.course || dbMarks[0]?.userCourse || '-'}</span></td>
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">Semester</td>
-                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.semester || (dbMarks[0]?.sem) || '-'}</span></td>
+                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.semester || dbMarks[0]?.sem || '-'}</span></td>
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">College Name</td>
@@ -323,7 +330,7 @@ export const StudentDashboard = () => {
               <div className="pt-4 space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-slate-800" style={{ fontSize: '12px' }}>
-                    Date of Result Declaration: 20/04/2026
+                    Date of Result Declaration: {dbMarks[0]?.approvedAt ? new Date(dbMarks[0].approvedAt).toLocaleDateString('en-GB') : (dbMarks[0]?.createdAt ? new Date(dbMarks[0].createdAt).toLocaleDateString('en-GB') : '-')}
                   </span>
 
                   <div className="text-center font-bold text-slate-900 text-[11px] min-w-[200px]">

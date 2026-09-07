@@ -111,7 +111,7 @@ router.post('/student/create', validateBody(createStudentSchema), async (req, re
       section || 'A',
       fatherName || null,
       motherName || null,
-      enrollmentNo || `23SOL${rollNo}`,
+      enrollmentNo || null,
       mustChangePassword
     ]);
 
