@@ -28,7 +28,7 @@ export const FacultyDirectory = ({
 
     await assignTeacherToSubject({
       teacherId: assigningFaculty.id,
-      teacherEmail: assigningFaculty.email || 'teacher@sol.du.ac.in',
+      teacherEmail: assigningFaculty.email || '',
       teacherName: assigningFaculty.name,
       subjectCode,
       subjectName,
@@ -72,7 +72,7 @@ export const FacultyDirectory = ({
             type="text" 
             value={newFacultySubj}
             onChange={(e) => setNewFacultySubj(e.target.value)}
-            placeholder="Initial Subject (e.g. Artificial Intelligence Lab)"
+            placeholder="Initial Subject (e.g. Subject Name / Code)"
             className="bg-slate-50 border border-slate-200 rounded-xl p-3 font-medium focus:ring-2 focus:ring-indigo-600 outline-none"
           />
           <div className="sm:col-span-3 text-right">
@@ -127,7 +127,7 @@ export const FacultyDirectory = ({
               {facultyList.map((f) => (
                 <tr key={f.id} className="hover:bg-slate-50">
                   <td className="p-3 font-bold text-slate-900">{f.name}</td>
-                  <td className="p-3 font-mono text-indigo-700 font-bold">{f.email || f.username || 'teacher@sol.du.ac.in'}</td>
+                  <td className="p-3 font-mono text-indigo-700 font-bold">{f.email || f.username || '-'}</td>
                   <td className="p-3 font-medium text-slate-600">{f.department}</td>
                   <td className="p-3 font-semibold text-slate-800">{f.subject || 'No Subject Assigned'}</td>
                   <td className="p-3 text-center">
@@ -143,6 +143,27 @@ export const FacultyDirectory = ({
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="flex items-center justify-between text-xs text-slate-500 pt-2">
+          <span>Page {usePortal().teachersPagination.page} of {usePortal().teachersPagination.totalPages || 1} ({usePortal().teachersPagination.total} Total Teachers)</span>
+          <div className="flex space-x-2">
+            <button
+              disabled={usePortal().teachersPagination.page <= 1}
+              onClick={() => usePortal().setTeachersPagination(p => ({ ...p, page: p.page - 1 }))}
+              className="px-3 py-1 bg-slate-100 rounded-lg font-bold text-slate-700 disabled:opacity-50 cursor-pointer"
+            >
+              Previous
+            </button>
+            <button
+              disabled={usePortal().teachersPagination.page >= (usePortal().teachersPagination.totalPages || 1)}
+              onClick={() => usePortal().setTeachersPagination(p => ({ ...p, page: p.page + 1 }))}
+              className="px-3 py-1 bg-slate-100 rounded-lg font-bold text-slate-700 disabled:opacity-50 cursor-pointer"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
 
@@ -173,7 +194,7 @@ export const FacultyDirectory = ({
                   type="text"
                   value={subjectName}
                   onChange={(e) => setSubjectName(e.target.value)}
-                  placeholder="e.g. Artificial Intelligence Lab"
+                  placeholder="e.g. Subject Name"
                   className="w-full border border-slate-300 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-indigo-600"
                   required
                 />

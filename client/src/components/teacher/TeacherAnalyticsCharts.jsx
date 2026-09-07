@@ -4,6 +4,8 @@ import {
   CartesianGrid 
 } from 'recharts';
 
+import { apiFetch } from '../../services/apiClient';
+
 export const TeacherAnalyticsCharts = () => {
   const [selectedCourseFilter, setSelectedCourseFilter] = useState('ALL');
   const [activeData, setActiveData] = useState([]);
@@ -13,9 +15,10 @@ export const TeacherAnalyticsCharts = () => {
   React.useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/admin/courses');
+        const res = await apiFetch('/api/admin/courses');
         if (res.ok) {
-          const data = await res.json();
+          const json = await res.json();
+          const data = json.data || json;
           setCoursesList(data);
         }
       } catch (err) {
@@ -28,15 +31,15 @@ export const TeacherAnalyticsCharts = () => {
   React.useEffect(() => {
     const fetchChartsData = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/admin/analytics');
+        const res = await apiFetch('/api/admin/analytics');
         if (res.ok) {
           const data = await res.json();
           if (data.courseWiseData && data.courseWiseData.length > 0) {
             setActiveData(data.courseWiseData.map(c => ({
-              course: c.course || 'B.Tech CSE',
+              course: c.course || '',
               checked: c.checked || 0,
               verified: c.published || c.verified || 0,
-              avgTheory: 65
+              avgTheory: 0
             })));
           }
         }

@@ -14,9 +14,9 @@ export const TeacherMarksUpload = ({ selectedSubject, onCloseSuccess }) => {
 
   // Filter students for the current subject's course/year/semester
   const classStudents = students.filter(
-    s => s.course === (selectedSubject?.course || 'B.A. (PROGRAMME)') && 
-         s.year === (selectedSubject?.year || '2026') && 
-         s.semester === (selectedSubject?.semester || 'V')
+    s => (!selectedSubject?.course || s.course === selectedSubject.course) && 
+         (!selectedSubject?.year || s.year === selectedSubject.year) && 
+         (!selectedSubject?.semester || s.semester === selectedSubject.semester)
   );
 
   // Download Pre-filled Excel Template
@@ -43,7 +43,7 @@ export const TeacherMarksUpload = ({ selectedSubject, onCloseSuccess }) => {
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Marks Upload Template');
-    XLSX.writeFile(workbook, `${selectedSubject.code}_Marks_Template.xlsx`);
+    XLSX.writeFile(workbook, `${selectedSubject?.code || 'Marks'}_Marks_Template.xlsx`);
   };
 
   // Process uploaded Excel / CSV File
@@ -168,12 +168,12 @@ export const TeacherMarksUpload = ({ selectedSubject, onCloseSuccess }) => {
         <div>
           <div className="flex items-center space-x-2">
             <span className="text-xs bg-blue-100 text-blue-800 font-mono px-2 py-0.5 rounded border border-blue-200 font-bold">
-              {selectedSubject?.code || 'CS401L'}
+              {selectedSubject?.code || '-'}
             </span>
-            <h2 className="text-xl font-bold text-slate-900">{selectedSubject?.name || 'Artificial Intelligence Lab'}</h2>
+            <h2 className="text-xl font-bold text-slate-900">{selectedSubject?.name || 'Subject Marks Upload'}</h2>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Course: <strong className="text-slate-800">{selectedSubject?.course || 'B.Tech CSE'}</strong> | Year: <strong className="text-slate-800">{selectedSubject?.year || '2026'}</strong> | Semester: <strong className="text-slate-800">{selectedSubject?.semester || 'VIII'}</strong>
+            Course: <strong className="text-slate-800">{selectedSubject?.course || '-'}</strong> | Year: <strong className="text-slate-800">{selectedSubject?.year || '-'}</strong> | Semester: <strong className="text-slate-800">{selectedSubject?.semester || '-'}</strong>
           </p>
         </div>
 

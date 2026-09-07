@@ -5,8 +5,8 @@ import { AdminDashboard } from './AdminDashboard';
 
 export const AdminLoginPage = () => {
   const { currentUser, login } = usePortal();
-  const [email, setEmail] = useState('admin@sol.du.ac.in');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   if (currentUser && currentUser.role === 'ADMIN') {
@@ -15,9 +15,10 @@ export const AdminLoginPage = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError('');
     const success = await login(email, password, 'ADMIN');
     if (!success) {
-      setError('Invalid Admin credentials! Default: admin@sol.du.ac.in / admin123');
+      setError('Invalid Admin credentials or unauthorized role.');
     }
   };
 
@@ -83,10 +84,6 @@ export const AdminLoginPage = () => {
           </button>
 
         </form>
-
-        <div className="pt-2 border-t border-slate-200 text-center text-[11px] text-slate-500 font-semibold">
-          Default Admin Login: <span className="font-mono text-slate-800 font-bold">admin@sol.du.ac.in</span> / <span className="font-mono text-slate-800 font-bold">admin123</span>
-        </div>
 
       </div>
     </div>

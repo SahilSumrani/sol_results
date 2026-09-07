@@ -5,8 +5,8 @@ import { TeacherDashboard } from './TeacherDashboard';
 
 export const TeacherLoginPage = () => {
   const { currentUser, login } = usePortal();
-  const [email, setEmail] = useState('teacher@sol.du.ac.in');
-  const [password, setPassword] = useState('teacher123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   if (currentUser && currentUser.role === 'TEACHER') {
@@ -15,16 +15,17 @@ export const TeacherLoginPage = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError('');
     const success = await login(email, password, 'TEACHER');
     if (!success) {
-      setError('Invalid Teacher credentials! Default: teacher@sol.du.ac.in / teacher123');
+      setError('Invalid Teacher credentials or unauthorized role.');
     }
   };
 
   return (
     <div className="max-w-md mx-auto py-12 px-4 font-sans">
       <div className="bg-white p-8 rounded-2xl border border-slate-300 shadow-xl space-y-6">
-        
+
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center mx-auto shadow-md shadow-blue-600/20">
@@ -43,12 +44,12 @@ export const TeacherLoginPage = () => {
 
         {/* Login Form */}
         <form onSubmit={handleLogin} className="space-y-4 text-xs">
-          
+
           <div>
             <label className="block font-bold text-slate-700 mb-1">Faculty Email Address</label>
             <div className="relative">
               <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-              <input 
+              <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -63,7 +64,7 @@ export const TeacherLoginPage = () => {
             <label className="block font-bold text-slate-700 mb-1">Password</label>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-              <input 
+              <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -83,10 +84,6 @@ export const TeacherLoginPage = () => {
           </button>
 
         </form>
-
-        <div className="pt-2 border-t border-slate-200 text-center text-[11px] text-slate-500 font-semibold">
-          Default Teacher Login: <span className="font-mono text-slate-800 font-bold">teacher@sol.du.ac.in</span> / <span className="font-mono text-slate-800 font-bold">teacher123</span>
-        </div>
 
       </div>
     </div>

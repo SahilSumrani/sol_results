@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { UserCheck, CheckCircle, XCircle } from 'lucide-react';
 
+import { apiFetch } from '../../services/apiClient';
+
 export const ReEvaluationPanel = () => {
   const [queries, setQueries] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -8,10 +10,10 @@ export const ReEvaluationPanel = () => {
   const fetchReEvaluations = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/teacher/re-evaluations');
+      const res = await apiFetch('/api/teacher/re-evaluations');
       if (res.ok) {
         const data = await res.json();
-        setQueries(data);
+        setQueries(data.data || data);
       }
     } catch (err) {
       console.log('Error fetching re-evaluations:', err.message);
@@ -26,9 +28,8 @@ export const ReEvaluationPanel = () => {
 
   const handleAction = async (id, newStatus) => {
     try {
-      await fetch('http://localhost:5000/api/teacher/re-evaluation/update', {
+      await apiFetch('/api/teacher/re-evaluation/update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ queryId: id, status: newStatus })
       });
       setQueries(prev => prev.map(q => q.id === id ? { ...q, status: newStatus } : q));

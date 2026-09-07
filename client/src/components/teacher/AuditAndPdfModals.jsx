@@ -80,7 +80,7 @@ export const AuditAndPdfModals = ({
               </div>
 
               <div className="text-right text-[10px] text-slate-600 font-sans">
-                <p>Submitted By: <strong>{teacherProfile?.name || 'Dr. Rahul Sharma'}</strong></p>
+                <p>Submitted By: <strong>{teacherProfile?.name || 'Faculty Member'}</strong></p>
                 <p>Approved By: <strong>Controller of Examinations</strong></p>
               </div>
             </div>

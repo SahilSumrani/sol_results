@@ -1,67 +1,119 @@
-import React, { useState } from 'react';
-import { 
-  UserCheck, Search, Download, Edit3, Save, Layers, Plus 
-} from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { UserCheck, Search, Download, Edit3, Save } from 'lucide-react';
+import { apiFetch } from '../../services/apiClient';
+
+const GRADE_POINTS_MAP = {
+  'O': 10,
+  'A+': 9,
+  'A': 8,
+  'B+': 7,
+  'B': 6,
+  'C': 5,
+  'P': 4,
+  'F': 0,
+  'AB': 0
+};
 
 export const AllStudentsReviewTable = ({ 
-  studentsList, 
-  marksList, 
-  onUpdateMarks, 
-  onExportCSV,
-  selectedSubject
+  studentsList = [], 
+  marksList = [], 
+  onUpdateMarks = () => {}, 
+  onExportCSV = () => {},
+  selectedSubject = null
 }) => {
   const [editingStudentId, setEditingStudentId] = useState(null);
   const [filterTerm, setFilterTerm] = useState('');
   
   // Subject & Marks Form State
-  const [selectedSubjectCode, setSelectedSubjectCode] = useState('2342011101');
+  const [selectedSubjectCode, setSelectedSubjectCode] = useState('');
   const [editFormData, setEditFormData] = useState({
-    th: 'B+',
-    tu: 'O',
+    th: '',
+    tu: '',
     pr: '',
-    netGrade: 'B+',
-    gradePoint: 7,
-    creditPoint: 28
+    netGrade: '',
+    gradePoint: 0,
+    creditPoint: 0
   });
 
   const [subjectsList, setSubjectsList] = useState([]);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    let isMounted = true;
     const fetchSubjects = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/admin/subjects');
-        if (res.ok) {
-          const data = await res.json();
+        const res = await apiFetch('/api/admin/subjects');
+        if (res.ok && isMounted) {
+          const json = await res.json();
+          const data = Array.isArray(json.data) ? json.data : (Array.isArray(json) ? json : []);
           setSubjectsList(data);
-          if (data.length > 0) setSelectedSubjectCode(data[0].code);
+          if (data.length > 0) {
+            setSelectedSubjectCode(data[0].code);
+          }
         }
       } catch (err) {
-        console.log('Error fetching subjects:', err.message);
+        console.warn('Error fetching subjects:', err.message);
       }
     };
     fetchSubjects();
+    return () => { isMounted = false; };
   }, []);
 
   const handleEditClick = (student) => {
-    setEditingStudentId(student.rollNo);
+    if (!student) return;
+    const targetRoll = student.rollNo || student.id || '';
+    setEditingStudentId(targetRoll);
+    if (student.paperCode) {
+      setSelectedSubjectCode(student.paperCode);
+    }
+    const initialGrade = student.netGrade || 'A';
+    setEditFormData({
+      th: student.thGrade || student.th || '',
+      tu: student.tuGrade || student.tu || '',
+      pr: student.prGrade || student.pr || '',
+      netGrade: initialGrade,
+      gradePoint: student.gradePoint ?? (GRADE_POINTS_MAP[initialGrade] || 0),
+      creditPoint: student.creditPoint ?? 0
+    });
+  };
+
+  const handleGradeChange = (grade) => {
+    const calculatedGp = GRADE_POINTS_MAP[grade] ?? 0;
+    setEditFormData(prev => ({
+      ...prev,
+      netGrade: grade,
+      gradePoint: calculatedGp
+    }));
   };
 
   const handleSaveMarks = (rollNo) => {
     const activeSubj = subjectsList.find(s => s.code === selectedSubjectCode);
-    onUpdateMarks(rollNo, {
-      ...editFormData,
-      paperCode: activeSubj.code,
-      paperName: activeSubj.name,
-      paperType: activeSubj.type,
-      credit: activeSubj.credit
-    });
+    if (typeof onUpdateMarks === 'function') {
+      onUpdateMarks(rollNo, {
+        ...editFormData,
+        paperCode: activeSubj?.code || selectedSubjectCode || '',
+        paperName: activeSubj?.name || selectedSubject?.name || '',
+        paperType: activeSubj?.type || 'DSC',
+        credit: activeSubj?.credit || 4
+      });
+    }
     setEditingStudentId(null);
   };
 
-  const filteredStudents = studentsList.filter(s => 
-    s.name.toLowerCase().includes(filterTerm.toLowerCase()) || 
-    s.rollNo.includes(filterTerm)
-  );
+  const safeStudents = useMemo(() => {
+    if (!Array.isArray(studentsList)) return [];
+    return studentsList;
+  }, [studentsList]);
+
+  const filteredStudents = useMemo(() => {
+    const query = (filterTerm || '').trim().toLowerCase();
+    if (!query) return safeStudents;
+    return safeStudents.filter(s => {
+      if (!s) return false;
+      const name = String(s.name || '').toLowerCase();
+      const roll = String(s.rollNo || s.id || '').toLowerCase();
+      return name.includes(query) || roll.includes(query);
+    });
+  }, [safeStudents, filterTerm]);
 
   return (
     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-5">
@@ -73,7 +125,7 @@ export const AllStudentsReviewTable = ({
             <UserCheck className="w-5 h-5 text-blue-800" />
             <span>Official Statement of Marks / Multi-Subject Entry System</span>
           </h2>
-          <p className="text-xs text-slate-500 font-medium">Add & update marks across all 34 NEP subjects for official DU Statement of Marks sheet.</p>
+          <p className="text-xs text-slate-500 font-medium">Add & update marks across all NEP subjects for official Statement of Marks sheet.</p>
         </div>
 
         <div className="flex items-center space-x-3">
@@ -88,6 +140,7 @@ export const AllStudentsReviewTable = ({
             />
           </div>
           <button 
+            type="button"
             onClick={onExportCSV}
             className="flex items-center space-x-1.5 bg-blue-800 hover:bg-blue-900 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shrink-0 shadow-xs"
           >
@@ -97,7 +150,7 @@ export const AllStudentsReviewTable = ({
         </div>
       </div>
 
-      {/* Main Student Grade Sheet Table (Matches Official DU Marksheet Format) */}
+      {/* Main Student Grade Sheet Table */}
       <div className="overflow-x-auto rounded-xl border border-slate-200">
         <table className="w-full text-left text-xs text-slate-800 border-collapse">
           <thead className="bg-slate-100 font-bold uppercase text-slate-700 border-b border-slate-300">
@@ -114,14 +167,15 @@ export const AllStudentsReviewTable = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 font-medium">
-            {filteredStudents.map((student) => {
-              const isEditing = editingStudentId === student.rollNo;
+            {filteredStudents.length > 0 ? (
+              filteredStudents.map((student, idx) => {
+                const roll = String(student.rollNo || student.id || `student-${idx}`);
+                const isEditing = editingStudentId === roll;
 
-              return (
-                <React.Fragment key={student.rollNo}>
-                  <tr className="hover:bg-slate-50">
-                    <td className="p-3 font-mono font-bold text-red-900">{student.rollNo}</td>
-                    <td className="p-3 font-bold text-slate-900">{student.name}</td>
+                return (
+                  <tr key={roll} className="hover:bg-slate-50">
+                    <td className="p-3 font-mono font-bold text-red-900">{student.rollNo || student.id || '-'}</td>
+                    <td className="p-3 font-bold text-slate-900">{student.name || '-'}</td>
                     
                     {/* Subject Selector Column */}
                     <td className="p-3 font-semibold text-slate-800">
@@ -136,7 +190,7 @@ export const AllStudentsReviewTable = ({
                           ))}
                         </select>
                       ) : (
-                        <span>{student.paperName || selectedSubject?.name || 'Artificial Intelligence Lab'}</span>
+                        <span>{student.paperName || selectedSubject?.name || '-'}</span>
                       )}
                     </td>
 
@@ -145,12 +199,12 @@ export const AllStudentsReviewTable = ({
                       {isEditing ? (
                         <input 
                           type="text"
-                          value={editFormData.th}
+                          value={editFormData.th || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, th: e.target.value })}
                           className="w-12 bg-white border border-blue-400 rounded-lg p-1 text-center font-bold text-blue-900 outline-none uppercase"
                         />
                       ) : (
-                        <span>{student.thGrade || 'A'}</span>
+                        <span>{student.thGrade || student.th || '-'}</span>
                       )}
                     </td>
 
@@ -159,12 +213,12 @@ export const AllStudentsReviewTable = ({
                       {isEditing ? (
                         <input 
                           type="text"
-                          value={editFormData.tu}
+                          value={editFormData.tu || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, tu: e.target.value })}
                           className="w-12 bg-white border border-blue-400 rounded-lg p-1 text-center font-bold text-blue-900 outline-none uppercase"
                         />
                       ) : (
-                        <span>{student.tuGrade || 'O'}</span>
+                        <span>{student.tuGrade || student.tu || '-'}</span>
                       )}
                     </td>
 
@@ -173,13 +227,13 @@ export const AllStudentsReviewTable = ({
                       {isEditing ? (
                         <input 
                           type="text"
-                          value={editFormData.pr}
+                          value={editFormData.pr || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, pr: e.target.value })}
                           placeholder="-"
                           className="w-12 bg-white border border-blue-400 rounded-lg p-1 text-center font-bold text-blue-900 outline-none uppercase"
                         />
                       ) : (
-                        <span>{student.prGrade || '-'}</span>
+                        <span>{student.prGrade || student.pr || '-'}</span>
                       )}
                     </td>
 
@@ -187,8 +241,8 @@ export const AllStudentsReviewTable = ({
                     <td className="p-3 text-center font-extrabold text-blue-900">
                       {isEditing ? (
                         <select 
-                          value={editFormData.netGrade}
-                          onChange={(e) => setEditFormData({ ...editFormData, netGrade: e.target.value })}
+                          value={editFormData.netGrade || 'A'}
+                          onChange={(e) => handleGradeChange(e.target.value)}
                           className="bg-white border border-blue-400 rounded-lg p-1 font-bold text-blue-900 text-xs"
                         >
                           <option value="O">O</option>
@@ -197,20 +251,27 @@ export const AllStudentsReviewTable = ({
                           <option value="B+">B+</option>
                           <option value="B">B</option>
                           <option value="C">C</option>
+                          <option value="P">P</option>
+                          <option value="F">F</option>
                         </select>
                       ) : (
-                        <span className="bg-blue-50 text-blue-800 px-2 py-0.5 rounded font-bold">{student.netGrade || 'A'}</span>
+                        <span className="bg-blue-50 text-blue-800 px-2 py-0.5 rounded font-bold">
+                          {student.netGrade || '-'}
+                        </span>
                       )}
                     </td>
 
                     {/* Grade Point */}
-                    <td className="p-3 text-center font-bold text-slate-900">7</td>
+                    <td className="p-3 text-center font-bold text-slate-900">
+                      {isEditing ? (editFormData.gradePoint ?? '-') : (student.gradePoint ?? '-')}
+                    </td>
 
                     {/* Action Buttons */}
                     <td className="p-3 text-center">
                       {isEditing ? (
                         <button 
-                          onClick={() => handleSaveMarks(student.rollNo)}
+                          type="button"
+                          onClick={() => handleSaveMarks(roll)}
                           className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-1 rounded-lg flex items-center space-x-1 mx-auto transition-all cursor-pointer shadow-xs"
                         >
                           <Save className="w-3.5 h-3.5" />
@@ -218,6 +279,7 @@ export const AllStudentsReviewTable = ({
                         </button>
                       ) : (
                         <button 
+                          type="button"
                           onClick={() => handleEditClick(student)}
                           className="bg-blue-800 hover:bg-blue-900 text-white font-bold text-xs px-3.5 py-1 rounded-lg flex items-center space-x-1 mx-auto transition-all cursor-pointer shadow-xs"
                         >
@@ -227,9 +289,15 @@ export const AllStudentsReviewTable = ({
                       )}
                     </td>
                   </tr>
-                </React.Fragment>
-              );
-            })}
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan="9" className="p-6 text-center text-slate-500 font-medium text-xs">
+                  No enrolled students found in database matching search query.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

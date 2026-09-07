@@ -1,12 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiFetch, setAccessToken, getAccessToken } from '../services/apiClient';
 
 const PortalContext = createContext();
 
 export const PortalProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(() => {
-    const saved = localStorage.getItem('portal_user');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
 
   const [assignedSubjects, setAssignedSubjects] = useState([]);
   const [submissions, setSubmissions] = useState([]);
@@ -15,123 +14,153 @@ export const PortalProvider = ({ children }) => {
   const [logs, setLogs] = useState([]);
   const [facultyList, setFacultyList] = useState([]);
 
-  const API_BASE = typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:5000';
+  const [teachersPagination, setTeachersPagination] = useState({ page: 1, limit: 20, total: 0 });
+  const [studentsPagination, setStudentsPagination] = useState({ page: 1, limit: 20, total: 0 });
+  const [logsPagination, setLogsPagination] = useState({ page: 1, limit: 50, total: 0 });
 
-  // Fetch Portal Data on Mount or User Login
+  // On initial mount, attempt silent refresh using httpOnly cookie
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const res = await apiFetch('/api/auth/refresh', { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          setAccessToken(data.accessToken);
+          setCurrentUser(data.user);
+        }
+      } catch (err) {
+        console.log('No active session on mount.');
+      } finally {
+        setLoadingUser(false);
+      }
+    };
+
+    initAuth();
+
+    const handleUnauthorized = () => {
+      setCurrentUser(null);
+      setAccessToken(null);
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+  }, []);
+
   const refreshData = async () => {
+    if (!currentUser) return;
+
     try {
-      const resTeachers = await fetch(`${API_BASE}/api/admin/teachers`);
-      if (resTeachers.ok) {
-        const teachersData = await resTeachers.json();
-        setFacultyList(teachersData.map(t => ({
-          id: String(t.id),
-          name: t.name,
-          email: t.email,
-          employeeId: `T00${t.id}`,
-          department: t.department || 'Computer Science & Engineering',
-          subject: t.assignedSubjects || 'No Subject Assigned',
-          status: 'ONLINE'
-        })));
-      }
+      if (currentUser.role === 'ADMIN') {
+        // Fetch teachers
+        const resTeachers = await apiFetch(`/api/admin/teachers?page=${teachersPagination.page}&limit=${teachersPagination.limit}`);
+        if (resTeachers.ok) {
+          const json = await resTeachers.json();
+          const teachersData = json.data || json;
+          if (json.pagination) setTeachersPagination(json.pagination);
+          setFacultyList(teachersData.map(t => ({
+            id: String(t.id),
+            name: t.name,
+            email: t.email,
+            employeeId: `T00${t.id}`,
+            department: t.department || 'Computer Science & Engineering',
+            subject: t.assignedSubjects || 'No Subject Assigned',
+            status: 'ONLINE'
+          })));
+        }
 
-      const resStudents = await fetch(`${API_BASE}/api/admin/students`);
-      if (resStudents.ok) {
-        const studentsData = await resStudents.json();
-        setStudents(studentsData.map(s => ({
-          id: String(s.id),
-          rollNo: s.rollNo || `24010${s.id}`,
-          name: s.name,
-          course: s.course || 'B.Tech CSE',
-          semester: 'VIII',
-          section: 'A'
-        })));
-      }
+        // Fetch students
+        const resStudents = await apiFetch(`/api/admin/students?page=${studentsPagination.page}&limit=${studentsPagination.limit}`);
+        if (resStudents.ok) {
+          const json = await resStudents.json();
+          const studentsData = json.data || json;
+          if (json.pagination) setStudentsPagination(json.pagination);
+          setStudents(studentsData.map(s => ({
+            id: String(s.id),
+            rollNo: s.rollNo || '',
+            name: s.name,
+            course: s.course || '-',
+            semester: s.semester || '-',
+            section: s.section || 'A'
+          })));
+        }
 
-      if (currentUser?.role === 'TEACHER') {
-        const resAssign = await fetch(`${API_BASE}/api/teacher/assignments?email=${encodeURIComponent(currentUser.email)}`);
+        // Fetch Queue & Audit Logs
+        const resQueue = await apiFetch('/api/admin/approval-queue');
+        if (resQueue.ok) {
+          const json = await resQueue.json();
+          setSubmissions(json.data || json);
+        }
+
+        const resAudit = await apiFetch(`/api/admin/audit-logs?page=${logsPagination.page}&limit=${logsPagination.limit}`);
+        if (resAudit.ok) {
+          const json = await resAudit.json();
+          if (json.pagination) setLogsPagination(json.pagination);
+          setLogs(json.data || json);
+        }
+      } else if (currentUser.role === 'TEACHER') {
+        const resAssign = await apiFetch('/api/teacher/assignments');
         if (resAssign.ok) {
           const assignData = await resAssign.json();
           setAssignedSubjects(assignData);
         }
-        const resSub = await fetch(`${API_BASE}/api/teacher/submissions?email=${encodeURIComponent(currentUser.email)}`);
+
+        const resSub = await apiFetch('/api/teacher/submissions');
         if (resSub.ok) {
-          const subData = await resSub.json();
-          setSubmissions(subData);
+          const json = await resSub.json();
+          setSubmissions(json.data || json);
         }
-      } else if (currentUser?.role === 'ADMIN') {
-        const resQueue = await fetch(`${API_BASE}/api/admin/approval-queue`);
-        if (resQueue.ok) {
-          const queueData = await resQueue.json();
-          setSubmissions(queueData);
-        }
-        const resAudit = await fetch(`${API_BASE}/api/admin/audit-logs`);
-        if (resAudit.ok) {
-          const auditData = await resAudit.json();
-          setLogs(auditData);
+      } else if (currentUser.role === 'STUDENT' && currentUser.rollNo) {
+        const resMarks = await apiFetch(`/api/marks/student/${currentUser.rollNo}`);
+        if (resMarks.ok) {
+          const json = await resMarks.json();
+          setMarks(json.data || json);
         }
       }
     } catch (err) {
-      console.log('PortalContext API fetch error:', err.message);
+      console.error('PortalContext refresh error:', err.message);
     }
   };
 
   useEffect(() => {
-    refreshData();
-  }, [currentUser]);
-
-  // Sync to local storage
-  useEffect(() => {
     if (currentUser) {
-      localStorage.setItem('portal_user', JSON.stringify(currentUser));
-    } else {
-      localStorage.removeItem('portal_user');
+      refreshData();
     }
-  }, [currentUser]);
+  }, [currentUser, teachersPagination.page, studentsPagination.page, logsPagination.page]);
 
-  // Auth actions
   const login = async (email, password, role) => {
     try {
-      const res = await fetch(`${API_BASE}/api/auth/login`, {
+      const res = await apiFetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, role })
       });
 
       if (res.ok) {
-        const user = await res.json();
-        setCurrentUser(user);
+        const data = await res.json();
+        setAccessToken(data.accessToken);
+        setCurrentUser(data.user);
         return true;
       }
     } catch (err) {
-      console.warn('API login failed, falling back to static auth:', err.message);
+      console.error('Login failed:', err.message);
     }
-
-    // Static / Mock Fallback Authentication if backend server is offline or credential match
-    if (role === 'ADMIN' && email === 'admin@sol.du.ac.in' && password === 'admin123') {
-      const adminUser = { id: 1, name: 'System Admin', email: 'admin@sol.du.ac.in', role: 'ADMIN', department: 'Examination Branch' };
-      setCurrentUser(adminUser);
-      return true;
-    }
-
-    if (role === 'TEACHER' && email === 'teacher@sol.du.ac.in' && password === 'teacher123') {
-      const teacherUser = { id: 2, name: 'Dr. Rajesh Sharma', email: 'teacher@sol.du.ac.in', role: 'TEACHER', department: 'Computer Science' };
-      setCurrentUser(teacherUser);
-      return true;
-    }
-
     return false;
   };
 
-  const logout = () => {
-    setCurrentUser(null);
+  const logout = async () => {
+    try {
+      await apiFetch('/api/auth/logout', { method: 'POST' });
+    } catch (err) {
+      // ignore
+    } finally {
+      setAccessToken(null);
+      setCurrentUser(null);
+    }
   };
 
-  // Admin Actions
   const assignTeacherToSubject = async (assignmentObj) => {
     try {
-      const res = await fetch(`${API_BASE}/api/admin/assign-subject`, {
+      const res = await apiFetch('/api/admin/assign-subject', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(assignmentObj)
       });
       if (res.ok) {
@@ -146,9 +175,8 @@ export const PortalProvider = ({ children }) => {
 
   const reviewSubmission = async (submissionId, action, rejectionReason) => {
     try {
-      const res = await fetch(`${API_BASE}/api/admin/submission/review`, {
+      const res = await apiFetch('/api/admin/submission/review', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ submissionId, action, rejectionReason })
       });
       if (res.ok) {
@@ -161,12 +189,10 @@ export const PortalProvider = ({ children }) => {
     return false;
   };
 
-  // Teacher Submit Marks
   const submitTeacherMarks = async (submissionData) => {
     try {
-      const res = await fetch(`${API_BASE}/api/teacher/marks/submit`, {
+      const res = await apiFetch('/api/teacher/marks/submit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submissionData)
       });
       if (res.ok) {
@@ -179,15 +205,12 @@ export const PortalProvider = ({ children }) => {
     return false;
   };
 
-  // Teacher Resubmit Correction Marks
   const resubmitTeacherMarks = async (submissionId, correctionReason, updatedMarks) => {
     try {
-      const res = await fetch(`${API_BASE}/api/teacher/marks/resubmit`, {
+      const res = await apiFetch('/api/teacher/marks/resubmit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           submissionId,
-          teacherName: currentUser?.name || 'Teacher',
           correctionReason,
           updatedMarks
         })
@@ -202,15 +225,14 @@ export const PortalProvider = ({ children }) => {
     return false;
   };
 
-  // Add Faculty to MySQL DB
-  const addFacultyMember = async (name, department, subject, email) => {
+  const addFacultyMember = async (name, department, subject, email, password) => {
     try {
-      const res = await fetch(`${API_BASE}/api/admin/teacher/create`, {
+      const res = await apiFetch('/api/admin/teacher/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
           email: email || `${name.toLowerCase().replace(/[^a-z]/g, '')}@sol.du.ac.in`,
+          password,
           department: department || 'Computer Science',
           course: subject || 'B.Tech CSE'
         })
@@ -225,12 +247,10 @@ export const PortalProvider = ({ children }) => {
     return false;
   };
 
-  // Add Subject to MySQL DB
   const addSubject = async (subjectObj) => {
     try {
-      const res = await fetch(`${API_BASE}/api/admin/subject/create`, {
+      const res = await apiFetch('/api/admin/subject/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(subjectObj)
       });
       if (res.ok) {
@@ -242,12 +262,10 @@ export const PortalProvider = ({ children }) => {
     }
   };
 
-  // Add Student to MySQL DB
   const addStudent = async (studentObj) => {
     try {
-      const res = await fetch(`${API_BASE}/api/admin/student/create`, {
+      const res = await apiFetch('/api/admin/student/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(studentObj)
       });
       if (res.ok) {
@@ -262,12 +280,19 @@ export const PortalProvider = ({ children }) => {
   return (
     <PortalContext.Provider value={{
       currentUser,
+      loadingUser,
       assignedSubjects,
       submissions,
       students,
       marks,
       logs,
       facultyList,
+      teachersPagination,
+      setTeachersPagination,
+      studentsPagination,
+      setStudentsPagination,
+      logsPagination,
+      setLogsPagination,
       login,
       logout,
       refreshData,
@@ -285,4 +310,3 @@ export const PortalProvider = ({ children }) => {
 };
 
 export const usePortal = () => useContext(PortalContext);
-

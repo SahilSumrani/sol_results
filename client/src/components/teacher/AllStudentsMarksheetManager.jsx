@@ -3,6 +3,8 @@ import {
   Users, Search, Download, Save, RefreshCw, CheckCircle2, FileSpreadsheet, PlusCircle, Trash2 
 } from 'lucide-react';
 
+import { apiFetch } from '../../services/apiClient';
+
 export const AllStudentsMarksheetManager = () => {
   const [selectedSem, setSelectedSem] = useState('ALL');
   const [selectedCourse, setSelectedCourse] = useState('ALL');
@@ -11,42 +13,49 @@ export const AllStudentsMarksheetManager = () => {
 
   // Master Table Data across all students & papers dynamically loaded from MySQL DB API
   const [studentMarksData, setStudentMarksData] = useState([]);
+  const [coursesList, setCoursesList] = useState([]);
 
   React.useEffect(() => {
     const fetchMasterMarks = async () => {
       setLoading(true);
       try {
-        const API_BASE = 'http://localhost:5000';
-        const res = await fetch(`${API_BASE}/api/teacher/submissions`);
+        const resCourses = await apiFetch('/api/admin/courses');
+        if (resCourses.ok) {
+          const cJson = await resCourses.json();
+          const cData = cJson.data || cJson;
+          if (Array.isArray(cData)) setCoursesList(cData);
+        }
+
+        const res = await apiFetch('/api/teacher/submissions');
         if (res.ok) {
-          const data = await res.json();
-          if (data.students && data.students.length > 0) {
-            // Map student records dynamically
+          const json = await res.json();
+          const data = json.data || json;
+          if (Array.isArray(data) && data.length > 0) {
             const dynamicRows = [];
-            data.students.forEach((st, idx) => {
+            data.forEach((st, idx) => {
               dynamicRows.push({
                 id: String(idx + 1),
-                rollNo: st.rollNo,
-                name: st.name,
-                course: st.program || 'B.Tech CSE',
-                sem: `Sem ${st.sem || 'VIII'}`,
-                paperCode: 'CS401',
-                paperName: 'Artificial Intelligence',
-                type: 'DSC',
-                credit: 4,
-                th: 'B+',
-                tu: 'O',
-                pr: '-',
-                netGrade: 'B+',
-                gradePoint: 7,
-                creditPoint: 28
+                rollNo: st.rollNo || '',
+                name: st.studentName || st.name || '',
+                course: st.course || '-',
+                sem: st.semester || '-',
+                paperCode: st.subjectCode || '-',
+                paperName: st.subjectName || '-',
+                type: st.paperType || 'DSC',
+                credit: st.credit || 4,
+                th: st.thGrade || (st.thObt > 0 ? 'A' : '-'),
+                tu: st.tuGrade || (st.tuObt > 0 ? 'A' : '-'),
+                pr: st.prGrade || (st.prObt > 0 ? 'A' : '-'),
+                netGrade: st.netGrade || '-',
+                gradePoint: st.gradePoint ?? 0,
+                creditPoint: st.creditPoint ?? 0
               });
             });
             setStudentMarksData(dynamicRows);
           }
         }
       } catch (err) {
-        console.log('Master table fetch fallback active:', err.message);
+        console.log('Master table fetch error:', err.message);
       } finally {
         setLoading(false);
       }
@@ -54,20 +63,17 @@ export const AllStudentsMarksheetManager = () => {
     fetchMasterMarks();
   }, []);
 
-  // Fast direct inline cell editing (No modals, no row expansion, no multi-click hassles!)
+  // Fast direct inline cell editing
   const handleCellChange = (id, field, value) => {
     setStudentMarksData(prev => prev.map(row => {
       if (row.id === id) {
         const updatedRow = { ...row, [field]: value };
-        
-        // Auto update Grade Points & Credit Points instantly when Net Grade changes
         if (field === 'netGrade') {
           const pointMap = { 'O': 10, 'A+': 9, 'A': 8, 'B+': 7, 'B': 6, 'C': 5, 'D': 4, 'F': 0 };
-          const gp = pointMap[value] || 7;
+          const gp = pointMap[value] || 8;
           updatedRow.gradePoint = gp;
           updatedRow.creditPoint = gp * Number(updatedRow.credit || 4);
         }
-
         return updatedRow;
       }
       return row;
@@ -78,20 +84,20 @@ export const AllStudentsMarksheetManager = () => {
   const handleAddDirectRow = () => {
     const newRow = {
       id: `new_${Date.now()}`,
-      rollNo: '23345227191',
-      name: 'NEHA GUPTA',
-      course: 'B.A. (PROGRAMME)',
-      sem: 'Sem V',
-      paperCode: '2342571101',
-      paperName: 'PROGRAMMING FUNDAMENTALS USING C++',
+      rollNo: '',
+      name: '',
+      course: selectedCourse !== 'ALL' ? selectedCourse : '',
+      sem: selectedSem !== 'ALL' ? selectedSem : 'I',
+      paperCode: '',
+      paperName: '',
       type: 'DSC',
       credit: 4,
-      th: 'B+',
-      tu: 'O',
+      th: '-',
+      tu: '-',
       pr: '-',
-      netGrade: 'B+',
-      gradePoint: 7,
-      creditPoint: 28
+      netGrade: '-',
+      gradePoint: 0,
+      creditPoint: 0
     };
     setStudentMarksData(prev => [newRow, ...prev]);
   };
@@ -180,9 +186,9 @@ export const AllStudentsMarksheetManager = () => {
               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer"
             >
               <option value="ALL">All Courses</option>
-              <option value="B.A. (PROGRAMME)">B.A. (PROGRAMME)</option>
-              <option value="B.COM (HONS)">B.COM (HONS)</option>
-              <option value="B.A. (HONS) ENGLISH">B.A. (HONS) ENGLISH</option>
+              {coursesList.map(c => (
+                <option key={c.code || c.name} value={c.name}>{c.name}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -213,88 +219,96 @@ export const AllStudentsMarksheetManager = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 font-medium">
-              {filteredData.map((row) => (
-                <tr key={row.id} className="hover:bg-slate-50 transition-all">
-                  
-                  {/* Roll No */}
-                  <td className="p-2.5 font-mono font-bold text-red-900">{row.rollNo}</td>
-                  
-                  {/* Student Name */}
-                  <td className="p-2.5 font-bold text-slate-900">{row.name}</td>
-                  
-                  {/* Paper Code & Name */}
-                  <td className="p-2.5">
-                    <p className="font-mono text-[10px] text-slate-400">{row.paperCode}</p>
-                    <h6 className="font-bold text-slate-900 text-xs">{row.paperName}</h6>
-                  </td>
+              {filteredData.length > 0 ? (
+                filteredData.map((row) => (
+                  <tr key={row.id} className="hover:bg-slate-50 transition-all">
+                    
+                    {/* Roll No */}
+                    <td className="p-2.5 font-mono font-bold text-red-900">{row.rollNo}</td>
+                    
+                    {/* Student Name */}
+                    <td className="p-2.5 font-bold text-slate-900">{row.name}</td>
+                    
+                    {/* Paper Code & Name */}
+                    <td className="p-2.5">
+                      <p className="font-mono text-[10px] text-slate-400">{row.paperCode}</p>
+                      <h6 className="font-bold text-slate-900 text-xs">{row.paperName}</h6>
+                    </td>
 
-                  {/* Type */}
-                  <td className="p-2.5 text-center font-bold text-slate-600">{row.type}</td>
+                    {/* Type */}
+                    <td className="p-2.5 text-center font-bold text-slate-600">{row.type}</td>
 
-                  {/* TH Grade (Direct Editable Input Cell) */}
-                  <td className="p-2.5 text-center">
-                    <input 
-                      type="text" 
-                      value={row.th}
-                      onChange={(e) => handleCellChange(row.id, 'th', e.target.value.toUpperCase())}
-                      className="w-12 bg-white border border-slate-300 rounded p-1 text-center font-bold text-slate-900 uppercase focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none"
-                    />
-                  </td>
+                    {/* TH Grade (Direct Editable Input Cell) */}
+                    <td className="p-2.5 text-center">
+                      <input 
+                        type="text" 
+                        value={row.th}
+                        onChange={(e) => handleCellChange(row.id, 'th', e.target.value.toUpperCase())}
+                        className="w-12 bg-white border border-slate-300 rounded p-1 text-center font-bold text-slate-900 uppercase focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none"
+                      />
+                    </td>
 
-                  {/* TU Grade (Direct Editable Input Cell) */}
-                  <td className="p-2.5 text-center">
-                    <input 
-                      type="text" 
-                      value={row.tu}
-                      onChange={(e) => handleCellChange(row.id, 'tu', e.target.value.toUpperCase())}
-                      className="w-12 bg-white border border-slate-300 rounded p-1 text-center font-bold text-slate-900 uppercase focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none"
-                    />
-                  </td>
+                    {/* TU Grade (Direct Editable Input Cell) */}
+                    <td className="p-2.5 text-center">
+                      <input 
+                        type="text" 
+                        value={row.tu}
+                        onChange={(e) => handleCellChange(row.id, 'tu', e.target.value.toUpperCase())}
+                        className="w-12 bg-white border border-slate-300 rounded p-1 text-center font-bold text-slate-900 uppercase focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none"
+                      />
+                    </td>
 
-                  {/* PR Grade (Direct Editable Input Cell) */}
-                  <td className="p-2.5 text-center">
-                    <input 
-                      type="text" 
-                      value={row.pr}
-                      onChange={(e) => handleCellChange(row.id, 'pr', e.target.value.toUpperCase())}
-                      className="w-12 bg-white border border-slate-300 rounded p-1 text-center font-bold text-slate-900 uppercase focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none"
-                    />
-                  </td>
+                    {/* PR Grade (Direct Editable Input Cell) */}
+                    <td className="p-2.5 text-center">
+                      <input 
+                        type="text" 
+                        value={row.pr}
+                        onChange={(e) => handleCellChange(row.id, 'pr', e.target.value.toUpperCase())}
+                        className="w-12 bg-white border border-slate-300 rounded p-1 text-center font-bold text-slate-900 uppercase focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none"
+                      />
+                    </td>
 
-                  {/* Net Overall Grade (Direct Select Dropdown Cell) */}
-                  <td className="p-2.5 text-center">
-                    <select 
-                      value={row.netGrade}
-                      onChange={(e) => handleCellChange(row.id, 'netGrade', e.target.value)}
-                      className="bg-blue-50 border border-blue-300 rounded p-1 font-bold text-blue-900 text-xs outline-none focus:ring-2 focus:ring-blue-600"
-                    >
-                      <option value="O">O (10)</option>
-                      <option value="A+">A+ (9)</option>
-                      <option value="A">A (8)</option>
-                      <option value="B+">B+ (7)</option>
-                      <option value="B">B (6)</option>
-                      <option value="C">C (5)</option>
-                    </select>
-                  </td>
+                    {/* Net Overall Grade (Direct Select Dropdown Cell) */}
+                    <td className="p-2.5 text-center">
+                      <select 
+                        value={row.netGrade}
+                        onChange={(e) => handleCellChange(row.id, 'netGrade', e.target.value)}
+                        className="bg-blue-50 border border-blue-300 rounded p-1 font-bold text-blue-900 text-xs outline-none focus:ring-2 focus:ring-blue-600"
+                      >
+                        <option value="O">O (10)</option>
+                        <option value="A+">A+ (9)</option>
+                        <option value="A">A (8)</option>
+                        <option value="B+">B+ (7)</option>
+                        <option value="B">B (6)</option>
+                        <option value="C">C (5)</option>
+                      </select>
+                    </td>
 
-                  {/* Grade Point (Auto Updated) */}
-                  <td className="p-2.5 text-center font-bold text-slate-900">{row.gradePoint}</td>
+                    {/* Grade Point (Auto Updated) */}
+                    <td className="p-2.5 text-center font-bold text-slate-900">{row.gradePoint}</td>
 
-                  {/* Credit Point (Auto Updated) */}
-                  <td className="p-2.5 text-center font-extrabold text-blue-900 bg-blue-50/50">{row.creditPoint}</td>
+                    {/* Credit Point (Auto Updated) */}
+                    <td className="p-2.5 text-center font-extrabold text-blue-900 bg-blue-50/50">{row.creditPoint}</td>
 
-                  {/* Row Delete Action */}
-                  <td className="p-2.5 text-center">
-                    <button 
-                      onClick={() => handleDeleteRow(row.id)}
-                      className="bg-red-50 hover:bg-red-100 text-red-600 p-1.5 rounded transition-all cursor-pointer"
-                      title="Delete Row"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {/* Row Delete Action */}
+                    <td className="p-2.5 text-center">
+                      <button 
+                        onClick={() => handleDeleteRow(row.id)}
+                        className="bg-red-50 hover:bg-red-100 text-red-600 p-1.5 rounded transition-all cursor-pointer"
+                        title="Delete Row"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="11" className="p-6 text-center text-slate-500 font-medium text-xs">
+                    No marksheet records found in database matching current filters. Click "Add Mark Row" to enter marks directly.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

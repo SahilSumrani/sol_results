@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Check, X, Eye, AlertCircle, FileText } from 'lucide-react';
 import { usePortal } from '../../context/PortalContext';
 
+import { apiFetch } from '../../services/apiClient';
+
 export const PendingApprovalsTable = () => {
   const { submissions, reviewSubmission } = usePortal();
   const [inspectSubmission, setInspectSubmission] = useState(null);
@@ -10,16 +12,16 @@ export const PendingApprovalsTable = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [loadingMarks, setLoadingMarks] = useState(false);
 
-  const reviewQueue = submissions.filter(s => s.status === 'UNDER REVIEW' || s.status === 'SUBMITTED');
+  const reviewQueue = submissions.filter(s => s.status === 'UNDER_REVIEW' || s.status === 'DRAFT');
 
   const handleOpenReview = async (sub) => {
     setInspectSubmission(sub);
     setLoadingMarks(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/submission/${sub.id}/marks`);
+      const res = await apiFetch(`/api/admin/submission/${sub.id}/marks`);
       if (res.ok) {
         const data = await res.json();
-        setInspectMarks(data);
+        setInspectMarks(data.data || data || []);
       } else {
         setInspectMarks([]);
       }
@@ -157,14 +159,22 @@ export const PendingApprovalsTable = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
-                    {inspectMarks.map((m, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50">
-                        <td className="p-3 font-mono font-bold text-indigo-900">{m.rollNo}</td>
-                        <td className="p-3 font-semibold text-slate-800">{m.studentName || m.name}</td>
-                        <td className="p-3 text-center font-bold text-emerald-700">{m.prObt || m.thObt || m.marks}</td>
-                        <td className="p-3 text-center font-medium text-slate-500">{inspectSubmission.maxMarks || 40}</td>
+                    {inspectMarks.length > 0 ? (
+                      inspectMarks.map((m, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50">
+                          <td className="p-3 font-mono font-bold text-indigo-900">{m.rollNo}</td>
+                          <td className="p-3 font-semibold text-slate-800">{m.studentName || m.name}</td>
+                          <td className="p-3 text-center font-bold text-emerald-700">{m.prObt || m.thObt || m.marks}</td>
+                          <td className="p-3 text-center font-medium text-slate-500">{inspectSubmission.maxMarks || 40}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="4" className="p-6 text-center text-xs text-slate-500 font-medium">
+                          No student marks found for this submission in MySQL database.
+                        </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               )}
@@ -202,7 +212,7 @@ export const PendingApprovalsTable = () => {
             <textarea
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder='e.g., "Roll No. 240104 marks need verification against lab record."'
+              placeholder='e.g., "Internal marks require verification against lab record sheets."'
               rows={3}
               className="w-full border border-slate-300 rounded-xl p-3 text-xs focus:ring-2 focus:ring-red-500 focus:outline-none"
             />

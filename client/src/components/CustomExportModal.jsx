@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiFetch } from '../services/apiClient';
 
 export const CustomExportModal = ({ isOpen, onClose, onExport }) => {
   const [selectedFy, setSelectedFy] = useState('2026-27');
@@ -20,9 +21,10 @@ export const CustomExportModal = ({ isOpen, onClose, onExport }) => {
   React.useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/admin/courses');
+        const res = await apiFetch('/api/admin/courses');
         if (res.ok) {
-          const data = await res.json();
+          const json = await res.json();
+          const data = json.data || json;
           setCoursesList(data);
           if (data.length > 0) setSelectedCourse(data[0].name || data[0].code);
         }

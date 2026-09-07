@@ -9,13 +9,14 @@ import {
 import { SubmissionsLogTable } from './SubmissionsLogTable';
 import { AuditAndPdfModals } from './AuditAndPdfModals';
 import { usePortal } from '../../context/PortalContext';
+import { apiFetch } from '../../services/apiClient';
 
 export const ProductionTeacherDashboard = ({ onLogout }) => {
   // Navigation Flow States: 'dashboard' | 'subjects' | 'select_exam' | 'upload_method' | 'excel_upload' | 'manual_entry' | 'validation' | 'preview_marks' | 'submission_success' | 'submissions_log' | 'classes' | 'students' | 'reports' | 'notifications'
   const [currentStep, setCurrentStep] = useState('dashboard');
   
   // Active Selected Examination Context
-  const [selectedSubject, setSelectedSubject] = useState({ code: 'CS401', name: 'Artificial Intelligence', program: 'B.Tech CSE', semester: 'VIII', students: 62, status: 'Pending' });
+  const [selectedSubject, setSelectedSubject] = useState(null);
   const [academicYear, setAcademicYear] = useState('2026–27');
   const [course, setCourse] = useState('B.Tech CSE');
   const [year, setYear] = useState('4th Year');
@@ -63,12 +64,12 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
     const fetchTeacherData = async () => {
       setLoading(true);
       try {
-        const resSub = await fetch('http://localhost:5000/api/teacher/submissions');
+        const resSub = await apiFetch('/api/teacher/submissions');
         if (resSub.ok) {
           const data = await resSub.json();
           setSubmissionsList(data);
         }
-        const resAssign = await fetch('http://localhost:5000/api/teacher/assignments');
+        const resAssign = await apiFetch('/api/teacher/assignments');
         if (resAssign.ok) {
           const data = await resAssign.json();
           setAssignedSubjects(data.map(item => ({
@@ -76,8 +77,8 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
             name: item.subjectName,
             program: item.course,
             semester: item.semester,
-            students: 62,
-            status: 'Pending'
+            students: item.studentCount || 60,
+            status: item.status || 'Pending'
           })));
         }
       } catch (err) {
@@ -91,6 +92,8 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
 
   const handleSelectSubject = (subj) => {
     setSelectedSubject(subj);
+    if (subj?.program) setCourse(subj.program);
+    if (subj?.semester) setSemester(subj.semester);
     setCurrentStep('select_exam');
   };
 
@@ -106,17 +109,60 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
     }));
   };
 
-  const handleFinalSubmitConfirm = () => {
-    const newSubId = `SUB-2026-00${Math.floor(100 + Math.random() * 900)}`;
-    setLastSubmissionId(newSubId);
-    
-    setSubmissionsList(prev => [
-      { id: newSubId, subject: `${selectedSubject.name} (${selectedSubject.code})`, class: `${selectedSubject.program} - 4th Year`, examType, students: previewRows.length, date: '02 Sept 2026', status: 'Under Review', rejectionReason: null },
-      ...prev
-    ]);
+  const handleFinalSubmitConfirm = async () => {
+    const newSubId = `SUB-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+    try {
+      const res = await apiFetch('/api/teacher/marks/submit', {
+        method: 'POST',
+        body: JSON.stringify({
+          submissionId: newSubId,
+          subjectCode: selectedSubject.code,
+          subjectName: selectedSubject.name,
+          course: selectedSubject.program || selectedSubject.course || 'B.Tech CSE',
+          semester: selectedSubject.semester || 'VIII',
+          section: selectedSubject.section || 'A',
+          examType: examType || 'Practical',
+          maxMarks: maxMarks || 40,
+          marksData: previewRows.map(r => ({
+            rollNo: r.rollNo,
+            name: r.name,
+            marks: Number(r.internal || r.practical || r.marks || 0),
+            paperType: 'DSC'
+          }))
+        })
+      });
 
-    setConfirmationModalOpen(false);
-    setCurrentStep('submission_success');
+      if (res.ok) {
+        const json = await res.json();
+        const finalId = json.submissionId || newSubId;
+        setLastSubmissionId(finalId);
+        
+        setSubmissionsList(prev => [
+          { 
+            id: finalId, 
+            subjectName: selectedSubject.name, 
+            subjectCode: selectedSubject.code, 
+            course: selectedSubject.program || selectedSubject.course || 'B.Tech CSE', 
+            semester: selectedSubject.semester || 'VIII',
+            section: selectedSubject.section || 'A',
+            examType, 
+            totalStudents: previewRows.length, 
+            status: 'UNDER_REVIEW', 
+            submittedAt: new Date().toISOString(),
+            rejectionReason: null 
+          },
+          ...prev
+        ]);
+
+        setConfirmationModalOpen(false);
+        setCurrentStep('submission_success');
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to submit marks to database.');
+      }
+    } catch (err) {
+      alert('Network error submitting marks: ' + err.message);
+    }
   };
 
   const handleOpenCorrection = (sub) => {
@@ -124,32 +170,35 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
     setCorrectionModalOpen(true);
   };
 
-  const handleResubmitCorrection = () => {
+  const handleResubmitCorrection = async () => {
     if (!correctionReason.trim()) return alert('Please enter a correction reason');
-
-    const newAudit = {
-      id: Date.now(),
-      submissionId: selectedRejection.id,
-      rollNo: '240104',
-      name: 'Mohit Kumar',
-      paperCode: selectedRejection.subject,
-      field: 'Internal Marks',
-      prevVal: '27',
-      newVal: '30',
-      user: teacherProfile.name,
-      reason: correctionReason,
-      date: new Date().toLocaleString()
-    };
-
-    setAuditLogs(prev => [newAudit, ...prev]);
-    setSubmissionsList(prev => prev.map(s => s.id === selectedRejection.id ? { ...s, status: 'Under Review', rejectionReason: null } : s));
-
-    setCorrectionModalOpen(false);
-    alert(`Submission ${selectedRejection.id} resubmitted to HOD with Audit Log created.`);
+    try {
+      const res = await apiFetch('/api/teacher/marks/resubmit', {
+        method: 'POST',
+        body: JSON.stringify({
+          submissionId: selectedRejection.id,
+          correctionReason: correctionReason,
+          updatedMarks: []
+        })
+      });
+      if (res.ok) {
+        setSubmissionsList(prev => prev.map(s => s.id === selectedRejection.id ? { ...s, status: 'UNDER_REVIEW', rejectionReason: null } : s));
+        setCorrectionModalOpen(false);
+        setCorrectionReason('');
+        alert(`Submission #${selectedRejection.id} resubmitted for review with Audit Log created.`);
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to resubmit submission.');
+      }
+    } catch (err) {
+      alert('Error during resubmission: ' + err.message);
+    }
   };
 
   const handleDownloadDynamicTemplate = () => {
-    window.location.href = `http://localhost:5000/api/teacher/template/download?subjectCode=${selectedSubject.code}&subjectName=${selectedSubject.name}`;
+    if (!selectedSubject) return alert('Please select a subject first.');
+    const baseUrl = typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:5000';
+    window.location.href = `${baseUrl}/api/teacher/template/download?subjectCode=${selectedSubject.code}&subjectName=${selectedSubject.name}`;
   };
 
   return (
@@ -252,22 +301,27 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
         <main className="p-8 space-y-6 flex-1 overflow-y-auto max-w-6xl">
           
           {/* REJECTION ALERT BANNER */}
-          {submissionsList.some(s => s.status === 'Correction Required') && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center justify-between text-xs text-red-900">
-              <div className="flex items-center space-x-3">
-                <ShieldAlert className="w-5 h-5 text-red-600 shrink-0" />
-                <div>
-                  <h4 className="font-bold">⚠ Correction Required for Submission SUB-2026-00105</h4>
-                  <p className="text-[11px] text-red-700 font-medium">HOD Rejection: Roll No. 240104 and 240145 marks need verification against lab record sheets.</p>
+          {submissionsList.some(s => s.status === 'CORRECTION_REQUIRED' || s.status === 'Correction Required') && (
+            (() => {
+              const reqSub = submissionsList.find(s => s.status === 'CORRECTION_REQUIRED' || s.status === 'Correction Required');
+              return (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center justify-between text-xs text-red-900">
+                  <div className="flex items-center space-x-3">
+                    <ShieldAlert className="w-5 h-5 text-red-600 shrink-0" />
+                    <div>
+                      <h4 className="font-bold">⚠ Correction Required for Submission #{reqSub?.id}</h4>
+                      <p className="text-[11px] text-red-700 font-medium">Reason: {reqSub?.rejectionReason || 'Marks require verification by teacher.'}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => handleOpenCorrection(reqSub)}
+                    className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2 rounded-xl cursor-pointer shadow-xs shrink-0"
+                  >
+                    View Issues & Edit
+                  </button>
                 </div>
-              </div>
-              <button 
-                onClick={() => handleOpenCorrection(submissionsList.find(s => s.status === 'Correction Required'))}
-                className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2 rounded-xl cursor-pointer shadow-xs shrink-0"
-              >
-                View Issues & Edit
-              </button>
-            </div>
+              );
+            })()
           )}
 
           {/* DASHBOARD VIEW */}
@@ -285,7 +339,11 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
                 </div>
                 <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
                   <span className="text-xs font-bold text-slate-500 uppercase">Total Students</span>
-                  <h3 className="text-2xl font-bold text-slate-900">{studentsList.length > 0 ? studentsList.length : assignedSubjects.length * 30}</h3>
+                  <h3 className="text-2xl font-bold text-slate-900">
+                    {studentsList.length > 0 
+                      ? studentsList.length 
+                      : assignedSubjects.reduce((acc, curr) => acc + (curr.students || 0), 0)}
+                  </h3>
                 </div>
                 <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
                   <span className="text-xs font-bold text-slate-500 uppercase">Pending Submissions</span>
@@ -300,14 +358,14 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
                   <h3 className="font-bold text-sm text-slate-900 uppercase tracking-wider">Marks Submission Progress</h3>
                   <span className="text-lg font-bold text-blue-700">
                     {submissionsList.length > 0 
-                      ? `${Math.round((submissionsList.filter(s => s.status === 'Approved' || s.status === 'Published' || s.status === 'APPROVED').length / submissionsList.length) * 100)}%` 
+                      ? `${Math.round((submissionsList.filter(s => s.status === 'Approved' || s.status === 'Published' || s.status === 'APPROVED' || s.status === 'PUBLISHED').length / submissionsList.length) * 100)}%` 
                       : '0%'}
                   </span>
                 </div>
                 <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
                   <div 
                     className="bg-blue-600 h-full rounded-full transition-all" 
-                    style={{ width: submissionsList.length > 0 ? `${Math.round((submissionsList.filter(s => s.status === 'Approved' || s.status === 'Published' || s.status === 'APPROVED').length / submissionsList.length) * 100)}%` : '0%' }}
+                    style={{ width: submissionsList.length > 0 ? `${Math.round((submissionsList.filter(s => s.status === 'Approved' || s.status === 'Published' || s.status === 'APPROVED' || s.status === 'PUBLISHED').length / submissionsList.length) * 100)}%` : '0%' }}
                   ></div>
                 </div>
               </div>
@@ -406,7 +464,7 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-5">
               <div className="border-b border-slate-200 pb-3">
                 <h3 className="font-bold text-base text-slate-900">Upload Marks — Select Examination</h3>
-                <p className="text-xs text-slate-500 font-medium">Configure examination parameters for {selectedSubject.name} ({selectedSubject.code})</p>
+                <p className="text-xs text-slate-500 font-medium">Configure examination parameters for {selectedSubject?.name || 'Selected Subject'} ({selectedSubject?.code || '-'})</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
@@ -419,13 +477,13 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
                 <div>
                   <label className="block text-slate-500 mb-1">Course</label>
                   <select value={course} onChange={(e) => setCourse(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-bold outline-none">
-                    <option value="B.Tech CSE">B.Tech CSE</option>
+                    <option value={selectedSubject?.program || course}>{selectedSubject?.program || course}</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-slate-500 mb-1">Year / Semester</label>
                   <select value={semester} onChange={(e) => setSemester(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-bold outline-none">
-                    <option value="VIII">4th Year (Semester VIII)</option>
+                    <option value={selectedSubject?.semester || semester}>{selectedSubject?.semester ? `Semester ${selectedSubject.semester}` : semester}</option>
                   </select>
                 </div>
                 <div>
@@ -761,13 +819,13 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
           {currentStep === 'notifications' && (
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
               <h3 className="font-bold text-base text-slate-900 border-b border-slate-200 pb-3">Examination System Notifications</h3>
-              {submissionsList.filter(s => s.status === 'Correction Required' || s.status === 'CORRECTION REQUIRED').map((sub, i) => (
+              {submissionsList.filter(s => s.status === 'Correction Required' || s.status === 'CORRECTION REQUIRED' || s.status === 'CORRECTION_REQUIRED').map((sub, i) => (
                 <div key={i} className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs space-y-1">
                   <h5 className="font-bold text-red-900">⚠ Submission {sub.id} Rejected by Admin / HOD</h5>
                   <p className="text-[11px] text-red-700 font-medium">Reason: {sub.rejectionReason || 'Please verify student marks against physical attendance sheet.'}</p>
                 </div>
               ))}
-              {submissionsList.filter(s => s.status === 'Approved' || s.status === 'APPROVED' || s.status === 'Published').map((sub, i) => (
+              {submissionsList.filter(s => s.status === 'Approved' || s.status === 'APPROVED' || s.status === 'Published' || s.status === 'PUBLISHED').map((sub, i) => (
                 <div key={i} className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-xs space-y-1">
                   <h5 className="font-bold text-blue-900">Your {sub.subjectName || sub.subject || 'Marks'} submission has been approved.</h5>
                   <p className="text-[11px] text-blue-700 font-medium">Approved by System Admin on {new Date(sub.reviewedAt || Date.now()).toLocaleDateString('en-GB')}</p>
@@ -822,17 +880,10 @@ export const ProductionTeacherDashboard = ({ onLogout }) => {
             </div>
 
             <div className="space-y-3 text-xs">
-              <h4 className="font-bold text-slate-900">Edit Specific Flagged Marks:</h4>
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between font-semibold">
-                <div>
-                  <p className="font-bold text-slate-900">Roll No. 240104 - Mohit Kumar</p>
-                  <p className="text-[11px] text-slate-500">Current Internal: <strong className="text-red-900">27 / 30</strong></p>
-                </div>
-                <input 
-                  type="number" 
-                  defaultValue={30}
-                  className="w-16 bg-white border border-blue-400 rounded p-1 text-center font-bold text-blue-900 outline-none"
-                />
+              <h4 className="font-bold text-slate-900">Submission Details for Correction:</h4>
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1 font-medium text-slate-700">
+                <p>Submission ID: <strong className="text-slate-900">#{selectedRejection.id}</strong></p>
+                <p>Subject: <strong className="text-slate-900">{selectedRejection.subjectName || selectedRejection.subjectCode || selectedRejection.subject}</strong></p>
               </div>
 
               <div>

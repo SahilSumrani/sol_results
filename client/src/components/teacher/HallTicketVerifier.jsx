@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Search, CheckCircle2, UserX } from 'lucide-react';
 
+import { apiFetch } from '../../services/apiClient';
+
 export const HallTicketVerifier = () => {
   const [rollSearch, setRollSearch] = useState('');
   const [verifiedStudent, setVerifiedStudent] = useState(null);
@@ -11,34 +13,30 @@ export const HallTicketVerifier = () => {
     if (!rollSearch) return;
     setSearching(true);
     try {
-      const API_BASE = 'http://localhost:5000';
-      const res = await fetch(`${API_BASE}/api/marks/student/${rollSearch}`);
+      const res = await apiFetch(`/api/marks/student/${rollSearch}`);
       if (res.ok) {
-        const data = await res.json();
-        setVerifiedStudent({
-          rollNo: rollSearch,
-          name: data[0]?.name || `STUDENT ROLL ${rollSearch.slice(-4)}`,
-          fatherName: data[0]?.fatherName || 'DU Enrolled Student',
-          course: data[0]?.course || 'B.Tech CSE',
-          semester: 'Sem VIII',
-          center: 'SOL Examination Center, Delhi',
-          admitCardStatus: 'VERIFIED & ISSUED',
-          examDates: 'Nov-Dec 2026 Cycle'
-        });
+        const json = await res.json();
+        const data = json.data || json;
+        if (data && data.length > 0) {
+          setVerifiedStudent({
+            rollNo: rollSearch,
+            name: data[0]?.name || data[0]?.studentName || `Roll No: ${rollSearch}`,
+            course: data[0]?.course || '-',
+            semester: data[0]?.sem || '-',
+            center: 'SOL Examination Center, Delhi',
+            admitCardStatus: 'VERIFIED & ISSUED'
+          });
+        } else {
+          setVerifiedStudent(null);
+          alert(`No published hall ticket record found for Roll No: ${rollSearch}`);
+        }
       } else {
-        setVerifiedStudent({
-          rollNo: rollSearch,
-          name: 'VERIFIED CANDIDATE',
-          fatherName: 'DU Enrolled Student',
-          course: 'B.Tech CSE',
-          semester: 'Sem VIII',
-          center: 'SOL Examination Center, Delhi',
-          admitCardStatus: 'VERIFIED & ISSUED',
-          examDates: 'Nov-Dec 2026 Cycle'
-        });
+        setVerifiedStudent(null);
+        alert(`No record found for Roll No: ${rollSearch}`);
       }
     } catch (err) {
       console.log('Admit card verification search:', err.message);
+      setVerifiedStudent(null);
     } finally {
       setSearching(false);
     }

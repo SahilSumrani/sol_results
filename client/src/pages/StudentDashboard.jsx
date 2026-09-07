@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import confetti from 'canvas-confetti';
 import { usePortal } from '../context/PortalContext';
+import { apiFetch } from '../services/apiClient';
 import { RefreshCw, Search, GraduationCap } from 'lucide-react';
 
 export const StudentDashboard = () => {
-  const { currentUser, marks } = usePortal();
+  const { currentUser } = usePortal();
   const marksheetRef = useRef(null);
 
   // View state: default to false (DU Result Search Form), true when search submitted
@@ -15,12 +15,12 @@ export const StudentDashboard = () => {
   // Form State
   const [college, setCollege] = useState('School of Open Learning');
   const [session, setSession] = useState('Nov-Dec 2025');
-  const [rollNo, setRollNo] = useState(currentUser?.rollNo || '23345227188');
-  const [dobDay, setDobDay] = useState('15');
-  const [dobMonth, setDobMonth] = useState('08');
-  const [dobYear, setDobYear] = useState('2004');
+  const [rollNo, setRollNo] = useState(currentUser?.rollNo || '');
+  const [dobDay, setDobDay] = useState('');
+  const [dobMonth, setDobMonth] = useState('');
+  const [dobYear, setDobYear] = useState('');
   const [captchaInput, setCaptchaInput] = useState('');
-  const [captchaCode, setCaptchaCode] = useState('176588');
+  const [captchaCode, setCaptchaCode] = useState(() => Math.floor(100000 + Math.random() * 900000).toString());
 
   const refreshCaptcha = () => {
     const randomCaptcha = Math.floor(100000 + Math.random() * 900000).toString();
@@ -28,7 +28,6 @@ export const StudentDashboard = () => {
   };
 
   const [captchaError, setCaptchaError] = useState('');
-
   const [dbMarks, setDbMarks] = useState([]);
 
   const handleSearchSubmit = async (e) => {
@@ -39,35 +38,26 @@ export const StudentDashboard = () => {
     }
     setCaptchaError('');
     
-    // Fetch live student marks from MySQL Database API
     try {
-      const API_BASE = typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:5000';
-      const res = await fetch(`${API_BASE}/api/marks/student/${rollNo || '240101'}`);
+      const res = await apiFetch(`/api/marks/student/${rollNo}`);
       if (res.ok) {
-        const data = await res.json();
-        if (data && data.length > 0) setDbMarks(data);
+        const json = await res.json();
+        setDbMarks(json.data || json || []);
+      } else {
+        setDbMarks([]);
       }
     } catch (err) {
-      console.log('Using default marks structure for student view:', err.message);
+      console.error('Error fetching student marks:', err.message);
+      setDbMarks([]);
     }
 
     setShowMarksheet(true);
-    confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
   };
 
   const studentRollNo = rollNo || '';
+  const activeMarksSource = dbMarks || [];
 
-  // Fallback demo marks if database marks empty
-  const defaultMarks = [
-    { paperCode: '2272201101', paperName: 'MICROECONOMICS', paperType: 'DSC', sem: 'I', credit: 4, netGrade: 'A', gradePoint: 8, creditPoint: 32 },
-    { paperCode: '2322201102', paperName: 'INDIAN GOVERNMENT AND POLITICS', paperType: 'DSC', sem: 'I', credit: 4, netGrade: 'A+', gradePoint: 9, creditPoint: 36 },
-    { paperCode: '2312201103', paperName: 'HISTORY OF INDIA FROM EARLIEST TIMES', paperType: 'DSC', sem: 'I', credit: 4, netGrade: 'B+', gradePoint: 7, creditPoint: 28 },
-    { paperCode: '2035001004', paperName: 'ENGLISH FLUENCY I', paperType: 'AEC', sem: 'I', credit: 2, netGrade: 'A', gradePoint: 8, creditPoint: 16 }
-  ];
-
-  const activeMarksSource = dbMarks && dbMarks.length > 0 ? dbMarks : defaultMarks;
-
-  // Dynamic Paper List constructed from active marks
+  // Dynamic Paper List constructed from database marks
   const paperList = activeMarksSource.map((m, idx) => ({
     sr: idx + 1,
     code: m.paperCode,
@@ -75,9 +65,9 @@ export const StudentDashboard = () => {
     type: m.paperType || 'DSC',
     sem: m.sem,
     credit: m.credit || 4,
-    th: m.thGrade || (m.thObt > 50 ? 'A' : 'B+'),
-    tu: m.tuGrade || (m.tuObt > 15 ? 'O' : 'A'),
-    pr: m.prGrade || (m.prObt > 25 ? 'O' : '-'),
+    th: m.thObt > 0 ? (m.thGrade || 'A') : '-',
+    tu: m.tuObt > 0 ? (m.tuGrade || 'A') : '-',
+    pr: m.prObt > 0 ? (m.prGrade || 'A') : '-',
     net: m.netGrade || 'A',
     point: m.gradePoint || 8,
     creditPoint: m.creditPoint || 32
@@ -167,7 +157,7 @@ export const StudentDashboard = () => {
                           className="h-24 w-auto object-contain ml-auto"
                         />
                         <span className="text-[11px] font-mono text-maroon-800 font-bold block mt-1" style={{ color: '#800000' }}>
-                          DVFNO: {String(studentRollNo || '23345227188').slice(-6)}833
+                          DVFNO: {studentRollNo ? `${studentRollNo.slice(-6)}833` : '-'}
                         </span>
                       </div>
                     </td>
@@ -202,27 +192,27 @@ export const StudentDashboard = () => {
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">Name</td>
-                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.name || (dbMarks[0]?.studentName) || 'STUDENT CANDIDATE'}</span></td>
+                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.name || (dbMarks[0]?.studentName) || '-'}</span></td>
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">Father's Name</td>
-                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.fatherName || 'DU Enrolled Parent'}</span></td>
+                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.fatherName || '-'}</span></td>
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">Mother's Name</td>
-                    <td className="py-1">: <span style={{ color: '#800000' }}>NA</span></td>
+                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.motherName || '-'}</span></td>
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">Enrollment No.</td>
-                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.enrollmentNo || `23SOL${studentRollNo}`}</span></td>
+                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.enrollmentNo || (studentRollNo ? `23SOL${studentRollNo}` : '-')}</span></td>
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">Course Name</td>
-                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.course || (dbMarks[0]?.course) || '(NEP) B.A. (PROGRAMME)'}</span></td>
+                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.course || (dbMarks[0]?.course) || '-'}</span></td>
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">Semester</td>
-                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.semester || (dbMarks[0]?.sem) || 'V'}</span></td>
+                    <td className="py-1">: <span style={{ color: '#800000' }}>{currentUser?.semester || (dbMarks[0]?.sem) || '-'}</span></td>
                   </tr>
                   <tr>
                     <td className="py-1 font-semibold text-slate-700">College Name</td>
@@ -252,23 +242,31 @@ export const StudentDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {paperList.map((p) => (
-                      <tr key={p.sr} className="hover:bg-slate-50">
-                        <td className="border border-slate-300 p-1 text-center">{p.sr}</td>
-                        <td className="border border-slate-300 p-1 text-center font-mono">{p.code}</td>
-                        <td className="border border-slate-300 p-1 text-center">*</td>
-                        <td className="border border-slate-300 p-1 text-left uppercase font-medium">{p.name}</td>
-                        <td className="border border-slate-300 p-1 text-center font-semibold">{p.type}</td>
-                        <td className="border border-slate-300 p-1 text-center">{p.sem}</td>
-                        <td className="border border-slate-300 p-1 text-center font-semibold">{p.credit}</td>
-                        <td className="border border-slate-300 p-1 text-center">{p.th || '\u00A0'}</td>
-                        <td className="border border-slate-300 p-1 text-center">{p.tu || '\u00A0'}</td>
-                        <td className="border border-slate-300 p-1 text-center">{p.pr || '\u00A0'}</td>
-                        <td className="border border-slate-300 p-1 text-center font-bold">{p.net}</td>
-                        <td className="border border-slate-300 p-1 text-center font-bold">{p.point}</td>
-                        <td className="border border-slate-300 p-1 text-center font-bold">{p.creditPoint}</td>
+                    {paperList.length > 0 ? (
+                      paperList.map((p) => (
+                        <tr key={p.sr} className="hover:bg-slate-50">
+                          <td className="border border-slate-300 p-1 text-center">{p.sr}</td>
+                          <td className="border border-slate-300 p-1 text-center font-mono">{p.code}</td>
+                          <td className="border border-slate-300 p-1 text-center">*</td>
+                          <td className="border border-slate-300 p-1 text-left uppercase font-medium">{p.name}</td>
+                          <td className="border border-slate-300 p-1 text-center font-semibold">{p.type}</td>
+                          <td className="border border-slate-300 p-1 text-center">{p.sem}</td>
+                          <td className="border border-slate-300 p-1 text-center font-semibold">{p.credit}</td>
+                          <td className="border border-slate-300 p-1 text-center">{p.th || '\u00A0'}</td>
+                          <td className="border border-slate-300 p-1 text-center">{p.tu || '\u00A0'}</td>
+                          <td className="border border-slate-300 p-1 text-center">{p.pr || '\u00A0'}</td>
+                          <td className="border border-slate-300 p-1 text-center font-bold">{p.net}</td>
+                          <td className="border border-slate-300 p-1 text-center font-bold">{p.point}</td>
+                          <td className="border border-slate-300 p-1 text-center font-bold">{p.creditPoint}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="13" className="border border-slate-300 p-4 text-center text-slate-500 font-medium">
+                          No published marks found in database for Roll No: {studentRollNo || '-'}
+                        </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -287,16 +285,24 @@ export const StudentDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {computedSgpaTable.map((row, idx) => (
-                      <tr key={idx}>
-                        <td className="border border-slate-300 p-1.5">{row.sem}</td>
-                        <td className="border border-slate-300 p-1.5">{row.credit}</td>
-                        <td className="border border-slate-300 p-1.5">{row.point}</td>
-                        <td className="border border-slate-300 p-1.5 font-bold">{row.sgpa}</td>
-                        <td className="border border-slate-300 p-1.5 font-bold text-emerald-700">{row.result || '\u00A0'}</td>
-                        <td className="border border-slate-300 p-1.5 font-bold">{row.cgpa || '\u00A0'}</td>
+                    {computedSgpaTable.length > 0 ? (
+                      computedSgpaTable.map((row, idx) => (
+                        <tr key={idx}>
+                          <td className="border border-slate-300 p-1.5">{row.sem}</td>
+                          <td className="border border-slate-300 p-1.5">{row.credit}</td>
+                          <td className="border border-slate-300 p-1.5">{row.point}</td>
+                          <td className="border border-slate-300 p-1.5 font-bold">{row.sgpa}</td>
+                          <td className="border border-slate-300 p-1.5 font-bold text-emerald-700">{row.result || '\u00A0'}</td>
+                          <td className="border border-slate-300 p-1.5 font-bold">{row.cgpa || '\u00A0'}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="6" className="border border-slate-300 p-3 text-center text-slate-500 font-medium">
+                          No semester performance summary available.
+                        </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>

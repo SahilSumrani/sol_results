@@ -10,6 +10,8 @@ import { FacultyDirectory } from '../components/admin/FacultyDirectory';
 import { StudentDirectory } from '../components/admin/StudentDirectory';
 import { SystemAuditLogs } from '../components/admin/SystemAuditLogs';
 
+import { apiFetch } from '../services/apiClient';
+
 export const AdminDashboard = () => {
   const { marks, approveMarks, facultyList, addFacultyMember, students, logout, currentUser } = usePortal();
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,8 +39,7 @@ export const AdminDashboard = () => {
   React.useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const API_BASE = typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:5000';
-        const res = await fetch(`${API_BASE}/api/admin/analytics`);
+        const res = await apiFetch('/api/admin/analytics');
         if (res.ok) {
           const data = await res.json();
           setAnalytics(data);

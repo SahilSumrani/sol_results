@@ -3,6 +3,8 @@ import {
   Upload, Download, AlertTriangle, CheckCircle2, XCircle, FileSpreadsheet, ArrowLeft, RefreshCw, Save 
 } from 'lucide-react';
 
+import { apiFetch } from '../../services/apiClient';
+
 export const ProductionMarksUploadModule = ({ onBack }) => {
   const [activeMethod, setActiveMethod] = useState('excel'); // excel | manual
   const [uploadStep, setUploadStep] = useState(1); // 1: select, 2: upload/validate, 3: preview
@@ -13,7 +15,7 @@ export const ProductionMarksUploadModule = ({ onBack }) => {
   const [department, setDepartment] = useState('Computer Science & Engineering');
   const [year, setYear] = useState('4th Year');
   const [semester, setSemester] = useState('VIII');
-  const [subject, setSubject] = useState('Artificial Intelligence (CS401)');
+  const [subject, setSubject] = useState('');
   const [examType, setExamType] = useState('Internal Assessment');
   const [maxMarks, setMaxMarks] = useState(30);
   const [passingMarks, setPassingMarks] = useState(12);
@@ -23,22 +25,30 @@ export const ProductionMarksUploadModule = ({ onBack }) => {
   const [validationResult, setValidationResult] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Dynamic Student Preview Data initialized from Database
-  const [previewRows, setPreviewRows] = useState([]);
+  const [assignedSubjectsList, setAssignedSubjectsList] = useState([]);
 
-  // Load Enrolled Students from Live Database API
+  // Load Enrolled Students & Assigned Subjects from Live Database API
   React.useEffect(() => {
-    const fetchStudents = async () => {
+    const fetchTeacherModuleData = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/teacher/submissions');
+        const resAssign = await apiFetch('/api/teacher/assignments');
+        if (resAssign.ok) {
+          const assignData = await resAssign.json();
+          setAssignedSubjectsList(assignData);
+          if (assignData.length > 0 && !subject) {
+            setSubject(`${assignData[0].subjectName} (${assignData[0].subjectCode})`);
+          }
+        }
+        const res = await apiFetch('/api/teacher/submissions');
         if (res.ok) {
-          const data = await res.json();
+          const json = await res.json();
+          const data = json.data || json;
           if (Array.isArray(data) && data.length > 0) {
             setPreviewRows(data.map((s, idx) => ({
               id: String(idx + 1),
               select: true,
-              rollNo: s.rollNo || `24010${idx + 1}`,
-              name: s.studentName || s.name || `Student ${idx + 1}`,
+              rollNo: s.rollNo || '',
+              name: s.studentName || s.name || '',
               internal: s.thObt || 0,
               practical: s.prObt || 0,
               total: (s.thObt || 0) + (s.prObt || 0),
@@ -49,10 +59,10 @@ export const ProductionMarksUploadModule = ({ onBack }) => {
           }
         }
       } catch (err) {
-        console.log('Students fetch error:', err.message);
+        console.log('Teacher module data fetch error:', err.message);
       }
     };
-    fetchStudents();
+    fetchTeacherModuleData();
   }, []);
 
   const handleFileUpload = (e) => {
@@ -70,23 +80,27 @@ export const ProductionMarksUploadModule = ({ onBack }) => {
   const handleMarksSubmit = async () => {
     setSubmitting(true);
     try {
-      const res = await fetch('http://localhost:5000/api/teacher/marks/submit', {
+      const matchedSubject = assignedSubjectsList.find(s => `${s.subjectName} (${s.subjectCode})` === subject || s.subjectCode === subject) || assignedSubjectsList[0];
+      const targetCode = matchedSubject ? matchedSubject.subjectCode : (subject.match(/\(([^)]+)\)/)?.[1] || subject);
+      const targetName = matchedSubject ? matchedSubject.subjectName : subject.replace(/\s*\([^)]*\)/, '');
+      const targetCourse = matchedSubject ? (matchedSubject.course || matchedSubject.program) : (course || 'B.Tech CSE');
+      const targetSem = matchedSubject ? matchedSubject.semester : (semester || 'VIII');
+      const targetSec = matchedSubject ? (matchedSubject.section || 'A') : 'A';
+
+      const res = await apiFetch('/api/teacher/marks/submit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          subjectCode: 'CS401L',
-          subjectName: subject || 'Artificial Intelligence Lab',
-          course: course || 'B.Tech CSE',
-          semester: semester || 'VIII',
-          section: 'A',
-          examType: examType || 'Practical',
-          maxMarks: maxMarks || 40,
-          teacherEmail: 'teacher@sol.du.ac.in',
-          teacherName: 'Dr. Rahul Sharma',
+          subjectCode: targetCode,
+          subjectName: targetName,
+          course: targetCourse,
+          semester: targetSem,
+          section: targetSec,
+          examType: examType || 'Internal Assessment',
+          maxMarks: Number(maxMarks) || 30,
           marksData: previewRows.map(r => ({
             rollNo: r.rollNo,
             name: r.name,
-            marks: r.internal || r.practical || 0,
+            marks: Number(r.internal || r.practical || 0),
             paperType: 'DSC'
           }))
         })
@@ -98,7 +112,7 @@ export const ProductionMarksUploadModule = ({ onBack }) => {
         alert('Submission response: ' + (data.error || 'Marks submitted'));
       }
     } catch (err) {
-      alert('Marks Submitted to Approval Queue!');
+      alert('Error submitting marks: ' + err.message);
     } finally {
       setSubmitting(false);
     }
@@ -153,29 +167,45 @@ export const ProductionMarksUploadModule = ({ onBack }) => {
           <div>
             <label className="block text-slate-500 mb-1">Course</label>
             <select value={course} onChange={(e) => setCourse(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 font-bold outline-none">
-              <option value="B.Tech">B.Tech</option>
+              {assignedSubjectsList.length > 0 ? (
+                Array.from(new Set(assignedSubjectsList.map(a => a.course || a.program))).filter(Boolean).map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))
+              ) : (
+                <option value={course}>{course}</option>
+              )}
             </select>
           </div>
 
           <div>
             <label className="block text-slate-500 mb-1">Department</label>
             <select value={department} onChange={(e) => setDepartment(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 font-bold outline-none">
-              <option value="Computer Science & Engineering">Computer Science & Engineering</option>
+              <option value={department}>{department}</option>
             </select>
           </div>
 
           <div>
             <label className="block text-slate-500 mb-1">Year / Semester</label>
             <select value={semester} onChange={(e) => setSemester(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 font-bold outline-none">
-              <option value="VIII">4th Year (Semester VIII)</option>
+              {assignedSubjectsList.length > 0 ? (
+                Array.from(new Set(assignedSubjectsList.map(a => a.semester))).filter(Boolean).map(sem => (
+                  <option key={sem} value={sem}>Semester {sem}</option>
+                ))
+              ) : (
+                <option value={semester}>Semester {semester}</option>
+              )}
             </select>
           </div>
 
           <div>
             <label className="block text-slate-500 mb-1">Subject</label>
             <select value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 font-bold outline-none">
-              <option value="Artificial Intelligence (CS401)">Artificial Intelligence (CS401)</option>
-              <option value="Machine Learning (CS402)">Machine Learning (CS402)</option>
+              <option value="">Select Assigned Subject</option>
+              {assignedSubjectsList.map(s => (
+                <option key={s.subjectCode} value={`${s.subjectName} (${s.subjectCode})`}>
+                  {s.subjectName} ({s.subjectCode})
+                </option>
+              ))}
             </select>
           </div>
 

@@ -1,30 +1,16 @@
 import React from 'react';
 import { Download } from 'lucide-react';
+import { usePortal } from '../../context/PortalContext';
 
 export const SystemAuditLogs = ({ onOpenExport }) => {
-  const [logs, setLogs] = React.useState([]);
-
-  React.useEffect(() => {
-    const fetchLogs = async () => {
-      try {
-        const res = await fetch('http://localhost:5000/api/admin/audit-logs');
-        if (res.ok) {
-          const data = await res.json();
-          setLogs(data);
-        }
-      } catch (err) {
-        console.log('Error fetching audit logs:', err.message);
-      }
-    };
-    fetchLogs();
-  }, []);
+  const { logs, logsPagination, setLogsPagination } = usePortal();
 
   return (
     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-5">
       <div className="flex items-center justify-between pb-2 border-b border-slate-200">
         <div>
           <h2 className="text-lg font-bold text-slate-900">System Security Audit Logs</h2>
-          <p className="text-xs text-slate-500 font-medium">Immutable audit trail of admin publishing, faculty logins, and mark corrections.</p>
+          <p className="text-xs text-slate-500 font-medium">Immutable audit trail of admin publishing, faculty logins, and mark corrections (Paginated).</p>
         </div>
         <button 
           onClick={onOpenExport}
@@ -49,7 +35,7 @@ export const SystemAuditLogs = ({ onOpenExport }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 font-medium">
-            {logs.length > 0 ? (
+            {logs && logs.length > 0 ? (
               logs.map((log) => (
                 <tr key={log.id} className="hover:bg-slate-50">
                   <td className="p-3 font-mono text-slate-500">{new Date(log.timestamp).toLocaleString()}</td>
@@ -68,6 +54,27 @@ export const SystemAuditLogs = ({ onOpenExport }) => {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Pagination Controls */}
+      <div className="flex items-center justify-between text-xs text-slate-500 pt-2">
+        <span>Page {logsPagination.page} of {logsPagination.totalPages || 1} ({logsPagination.total} Total Audit Records)</span>
+        <div className="flex space-x-2">
+          <button
+            disabled={logsPagination.page <= 1}
+            onClick={() => setLogsPagination(p => ({ ...p, page: p.page - 1 }))}
+            className="px-3 py-1 bg-slate-100 rounded-lg font-bold text-slate-700 disabled:opacity-50 cursor-pointer"
+          >
+            Previous
+          </button>
+          <button
+            disabled={logsPagination.page >= (logsPagination.totalPages || 1)}
+            onClick={() => setLogsPagination(p => ({ ...p, page: p.page + 1 }))}
+            className="px-3 py-1 bg-slate-100 rounded-lg font-bold text-slate-700 disabled:opacity-50 cursor-pointer"
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   );
