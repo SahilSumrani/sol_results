@@ -3,7 +3,7 @@ require('dotenv').config();
 
 const poolLimit = parseInt(process.env.DB_POOL_LIMIT || '20', 10);
 
-const pool = mysql.createPool({
+const poolConfig = {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
@@ -13,7 +13,16 @@ const pool = mysql.createPool({
   connectionLimit: poolLimit,
   queueLimit: 0,
   multipleStatements: true
-});
+};
+
+if (process.env.DB_SSL === 'true' || (process.env.DB_HOST && (process.env.DB_HOST.includes('tidbcloud.com') || process.env.DB_HOST.includes('aivencloud.com')))) {
+  poolConfig.ssl = {
+    minVersion: 'TLSv1.2',
+    rejectUnauthorized: true
+  };
+}
+
+const pool = mysql.createPool(poolConfig);
 
 async function query(sql, params) {
   const [results] = await pool.execute(sql, params);
