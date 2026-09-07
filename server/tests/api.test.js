@@ -27,6 +27,9 @@ jest.mock('../src/db', () => ({
     if (sql.includes('FROM users WHERE role = \'STUDENT\'')) {
       return [{ id: 3, name: 'Student 1', rollNo: '240101', course: 'B.Tech CSE', semester: 'VIII', section: 'A' }];
     }
+    if (sql.includes('FROM users WHERE rollNo = ?')) {
+      return [{ rollNo: '240101', studentName: 'Aman Kumar', course: 'B.Tech CSE', department: 'School of Open Learning', sem: 'VIII', fatherName: 'Rajesh Kumar', motherName: 'Sunita Devi', enrollmentNo: '23SOL240101' }];
+    }
     if (sql.includes('teacher_assignments')) {
       return { insertId: 1 };
     }
@@ -102,5 +105,12 @@ describe('Full Backend API Operations & Validation Tests', () => {
 
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
+  });
+
+  test('Public scorecard lookup by roll number returns 200 without requiring auth token', async () => {
+    const res = await request(app).get('/api/marks/student/240101');
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data).toBeDefined();
+    expect(Array.isArray(res.body.data)).toBe(true);
   });
 });
