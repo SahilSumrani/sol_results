@@ -7,8 +7,9 @@ function errorHandler(err, req, res, next) {
     error: status === 500 ? 'Internal Server Error' : err.message
   };
 
+  response.details = err.message;
+  response.code = err.code || err.errno;
   if (process.env.NODE_ENV !== 'production' && status === 500) {
-    response.details = err.message;
     response.stack = err.stack;
   }
 
